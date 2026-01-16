@@ -3,15 +3,10 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Basket Scout Pro - v7 (Undo/Eventi/Edit/SpecFouls/PDF/Save)</title>
+<title>Basket Scout Pro - v7</title>
 
 <!-- XLSX (excel) -->
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-
-<!-- PDF libs (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
 
 <!-- Firebase (LIVE LINK / realtime) -->
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -224,6 +219,213 @@ body.noScroll{overflow:hidden;}
   #actionScreen .btnA{ min-height:96px; font-size:clamp(22px, 2.8vw, 34px); }
 }
 
+
+@media (max-width:560px){
+  
+  .grid5 .kpi:nth-child(4),
+  .grid5 .kpi:nth-child(5){ grid-column:span 1; }
+}
+
+.qTable{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+}
+.qCell{
+  background:#141414;
+  border:1px solid #2a2a2a;
+  border-radius:14px;
+  padding:10px 8px;
+  text-align:center;
+}
+.qCell .qt{ font-size:12px; font-weight:1000; color:#bdbdbd; }
+.qCell .qv{ font-size:16px; font-weight:1000; color:#fff; margin-top:4px; }
+
+@media (max-width: 420px){
+  .qCell{ padding:8px 6px; }
+  .qCell .qt{ font-size:11px; }
+  .qCell .qv{ font-size:14px; }
+}
+
+.pillCenter{ text-align:center; }
+
+
+
+
+/* ===== STAT LIVE: grid5 sempre su una riga ===== */
+
+.grid5::-webkit-scrollbar{ height:6px; }
+
+/* ===== Parziali squadra: occupa tutta la riga ===== */
+.qTable{
+  /* Parziali su UNA riga (Q1..Q4) senza scroll */
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:8px;
+}
+.qCell{
+  background:#141414;
+  border:1px solid #2a2a2a;
+  border-radius:14px;
+  padding:10px 8px;
+  text-align:center;
+}
+.qCell .qt{ font-size:12px; font-weight:1000; color:#bdbdbd; }
+.qCell .qv{ font-size:16px; font-weight:1000; color:#fff; margin-top:4px; }
+
+/* ===== Barra filtri quarti ===== */
+.qbar{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin:6px 0 12px;
+}
+.qbtn{
+  background:#1a1a1a;
+  border:1px solid #2a2a2a;
+  color:#eaeaea;
+  padding:8px 10px;
+  border-radius:999px;
+  font-weight:1000;
+  font-size:12px;
+}
+.qbtn.act{
+  background:#0b2a5a;
+  border-color:#2f6fff;
+  color:#ffffff;
+}
+
+/* ===== Bottoni giocatori in STAT LIVE (colori + posizioni) ===== */
+.selPlayer{
+  position:relative;
+  padding:10px 10px 12px;
+  border-radius:16px;
+  min-height:110px;
+  text-align:center;
+}
+.selPlayer.act{
+  outline:2px solid #2f6fff;
+}
+.spTime{
+  color:var(--y);
+  font-weight:1000;
+  font-size:13px;
+  margin-bottom:6px;
+}
+.spName{
+  font-weight:1000;
+  font-size:12px;
+  color:#fff;
+  opacity:.95;
+}
+.spNum{
+  font-weight:1000;
+  font-size:26px;
+  color:#fff;
+  margin-top:4px;
+}
+.spBottom{
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:end;
+}
+.spFoulBox{
+  justify-self:start;
+  background:#3a0000;
+  border:1px solid #ff3b3b;
+  color:#fff;
+  font-weight:1000;
+  border-radius:10px;
+  padding:4px 8px;
+  min-width:28px;
+}
+.spSpec{
+  justify-self:center;
+  color:#ff9f1a; /* arancione */
+  font-weight:1000;
+}
+.spPtsBox{
+  justify-self:end;
+  background:#0f3a0f;
+  border:1px solid #00c853;
+  color:#fff;
+  font-weight:1000;
+  border-radius:10px;
+  padding:4px 8px;
+  min-width:48px;
+  text-align:center;
+}
+
+
+
+/* ===== STAT LIVE: grid5 su una riga, senza scroll ===== */
+
+.grid5 .kpi{ padding:8px 6px; }
+.grid5 .kpi .t{ font-size:11px; }
+.grid5 .kpi .v{ font-size:14px; }
+.grid5 .kpiY .v{ font-size:18px; }
+
+/* Parziali piccoli, Totale grande */
+#tTot,#pTot{ font-size:20px; }
+#tQ1,#tQ2,#tQ3,#tQ4,#pQ1,#pQ2,#pQ3,#pQ4{ font-size:14px; }
+
+/* ===== Barra filtri quarti (sempre visibile) ===== */
+.qbar{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:6px 0 12px; }
+.qbtn{ background:#1a1a1a; border:1px solid #2a2a2a; color:#eaeaea; padding:8px 10px; border-radius:999px; font-weight:1000; font-size:12px; }
+.qbtn.act{ background:#0b2a5a; border-color:#2f6fff; color:#fff; }
+
+
+
+/* ===== OVERRIDE: grid5 sempre su una riga, NO scroll ===== */
+
+
+
+
+/* ===== VIEWER: mostra solo STAT LIVE ===== */
+body.viewer .wrap{max-width:560px;margin:0 auto;}
+body.viewer .wrap > :not(#modalStats){display:none!important;}
+body.viewer #modalStats{display:block!important;}
+body.viewer #actionScreen{display:none!important;}
+body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
+body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
+body.viewer #modalStats .closeTop{display:none!important;}
+
+
+
+/* ===== Filtri quarti (STAT LIVE) ===== */
+.qbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0 14px}
+.qbtn{background:#1a1a1a;border:1px solid #2a2a2a;color:#eaeaea;padding:8px 10px;border-radius:999px;font-weight:1000;font-size:12px}
+.qbtn.act{background:#0b2a5a;border-color:#2f6fff;color:#fff}
+/* "TUTTA PARTITA" sempre evidente */
+.qbtn.qall{background:#2a1f00;border-color:#ffb300;color:#fff}
+.qbtn.qall.act{background:#ffb300;border-color:#ffb300;color:#111}
+
+
+/* ===== grid5: sempre 1 riga (niente scroll), TOT grande, parziali piccoli ===== */
+
+.grid5 .kpi{padding:8px 6px;min-width:0}
+.grid5 .kpi .t{font-size:10px}
+.grid5 .kpi .v{font-size:13px}
+.grid5 .kpi:first-child .t{font-size:11px}
+.grid5 .kpi:first-child .v{font-size:18px}
+
+/* ===== grid5: sempre 1 riga (senza scroll). TOT grande, parziali più piccoli ===== */
+.grid5{
+  display:grid !important;
+  grid-template-columns: 1.5fr repeat(4, 1fr) !important;
+  gap:8px !important;
+  margin:8px 0 12px !important;
+}
+.grid5 .kpi{padding:8px 6px !important; min-width:0 !important;}
+.grid5 .kpi .t{font-size:10px !important;}
+.grid5 .kpi .v{font-size:13px !important;}
+.grid5 .kpi:first-child .t{font-size:11px !important;}
+.grid5 .kpi:first-child .v{font-size:18px !important;}
 </style>
 
 <style id="statsLiveLayout">
@@ -334,11 +536,13 @@ body.noScroll{overflow:hidden;}
   .spNum{font-size:28px;}
 }
 /* ===== Viewer pulito ===== */
-body.viewer .wrap{display:none;}
+
 body.viewer #actionScreen{display:none!important;}
 body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
 body.viewer #modalStats .closeTop{display:none!important;}
+body.viewer .wrap > :not(#modalStats){display:none!important;}
+body.viewer #modalStats{display:block!important;}
 
 /* ===== Falli speciali KPI ===== */
 .foulSpec{color:#ff3b3b;font-weight:1000;margin-left:6px;}
@@ -542,7 +746,6 @@ body.viewer #modalStats .closeTop{display:none!important;}
     <button class="btnW" style="background:#e0e0e0;color:#111" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
     <button class="btnW" style="background:#add8e6;color:#111" onclick="openStats()">📊 STAT LIVE</button>
     <button class="btnW" style="background:#4caf50;color:#fff" onclick="exportExcel()">📥 SCARICA EXCEL</button>
-    <button class="btnW" style="background:var(--y);color:#111" onclick="exportPDF()">🧾 SCARICA PDF</button>
     <button class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="openEvents()">🧾 EVENTI</button>
     <button class="btnW" style="background:#111;color:#fff;border:1px solid #2e2e2e" onclick="goToGamesMenu()">🏠 PARTITE</button>
     <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalGameOver');resetToSetup()">↩️ CHIUDI (TORNA SETUP)</button>
@@ -681,13 +884,51 @@ body.viewer #modalStats .closeTop{display:none!important;}
     </div>
   </div>
 
+<div id="teamPartialsWrap" class="partialsWrap">
+  <div class="pill pillCenter" style="margin-top:6px">PARZIALI</div>
+  <div id="teamQPartials" class="qTable"></div>
+
+  <div id="teamOTPartialsWrap" class="hidden" style="margin-top:6px">
+    <div class="pill pillCenter">PARZIALI OT</div>
+    <div id="teamOTPartials" class="qTable"></div>
+  </div>
+</div>
+
+
   <div class="selectorTeam" id="statsTeam"></div>
   <div class="pill pillCenter" id="statsHint">Seleziona un giocatore per vedere le statistiche personali</div>
   <div class="selectorPlayers" id="statsPlayers"></div>
-<div class="grid2">
-    <div class="kpi kpiY" id="minsBox"><div class="t">MINUTI</div><div class="v" id="minSel">00:00</div></div>
-    <div class="kpi kpiY"><div class="t">PUNTI</div><div class="v" id="ptsSel">0</div></div>
+<!-- TEMPO per quarto (solo giocatore) -->
+<div id="playerTimeWrap" class="hidden">
+  <div class="grid5">
+    <div class="kpi kpiY"><div class="t">TEMPO TOT</div><div class="v" id="tTot">00:00</div></div>
+    <div class="kpi"><div class="t">1Q</div><div class="v" id="tQ1">00:00</div></div>
+    <div class="kpi"><div class="t">2Q</div><div class="v" id="tQ2">00:00</div></div>
+    <div class="kpi"><div class="t">3Q</div><div class="v" id="tQ3">00:00</div></div>
+    <div class="kpi"><div class="t">4Q</div><div class="v" id="tQ4">00:00</div></div>
   </div>
+
+  <div id="playerOTTimeWrap" class="hidden" style="margin-top:10px">
+    <div class="pill pillCenter">MINUTI OT</div>
+    <div id="playerOTMinutes" class="qTable"></div>
+  </div>
+</div>
+
+<!-- PUNTI per quarto (solo giocatore) -->
+<div id="playerPtsWrap" class="hidden" style="margin-top:10px">
+  <div class="grid5">
+    <div class="kpi kpiY"><div class="t">PUNTI TOT</div><div class="v" id="pTot">0</div></div>
+    <div class="kpi"><div class="t">1Q</div><div class="v" id="pQ1">0</div></div>
+    <div class="kpi"><div class="t">2Q</div><div class="v" id="pQ2">0</div></div>
+    <div class="kpi"><div class="t">3Q</div><div class="v" id="pQ3">0</div></div>
+    <div class="kpi"><div class="t">4Q</div><div class="v" id="pQ4">0</div></div>
+  </div>
+
+  <div id="playerOTWrap" class="hidden" style="margin-top:10px">
+    <div class="pill pillCenter">PUNTI OT</div>
+    <div id="playerOTPoints" class="qTable"></div>
+  </div>
+</div>
 
   <div class="grid3">
     <div class="kpi"><div class="t">TIRI DA 2</div><div class="v" id="k2">0/0</div><div class="s" id="k2p">0,00%</div></div>
@@ -1537,20 +1778,24 @@ function setupCourt(){
   const court=$('shotCourt');
   court.addEventListener('click',e=>{
     const r=court.getBoundingClientRect();
-    S.shotX=Math.round(e.clientX-r.left);
-    S.shotY=Math.round(e.clientY-r.top);
+    // Coordinate normalizzate (310x240) indipendenti da zoom/scala del device
+    const rx = (e.clientX - r.left);
+    const ry = (e.clientY - r.top);
+    const nx = Math.round(rx * 310 / r.width);
+    const ny = Math.round(ry * 240 / r.height);
+    S.shotX = nx;
+    S.shotY = ny;
 
-    const cx=r.width/2, hy=30;
-    const d=Math.hypot(S.shotX-cx, S.shotY-hy);
-    S.shotVal=(d>130||(S.shotY<hy&&(S.shotX<20||S.shotX>r.width-20)))?3:2;
-
+    const cx = 310/2, hy = 30;
+    const d = Math.hypot(nx - cx, ny - hy);
+    S.shotVal = (d>130 || (ny<hy && (nx<20 || nx>310-20))) ? 3 : 2;
     $('shotInfo').textContent=`Tiro da ${S.shotVal} punti`;
 
     court.querySelectorAll('.mark').forEach(x=>x.remove());
     const m=document.createElement('div');
     m.className='mark';
-    m.style.left=S.shotX+'px';
-    m.style.top=S.shotY+'px';
+    m.style.left=rx+'px';
+    m.style.top=ry+'px';
     m.style.background=(S.shotVal===3)?'#ffeb3b':'#ff4444';
     court.appendChild(m);
   });
@@ -2147,6 +2392,140 @@ function minsByPlayer(){
   }
   return m;
 }
+
+function fmtMMSS(sec){
+  sec = Math.max(0, Math.floor(sec||0));
+  const m = Math.floor(sec/60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// Score HOME/AWAY per quarto (1..nQ incl OT)
+function scoreByQuarter(){
+  const H = [], A = [];
+  let q = 1;
+  const myIsHome = (S.noi === 'Home');
+
+  const addH = (v)=>{ H[q] = (H[q]||0) + v; };
+  const addA = (v)=>{ A[q] = (A[q]||0) + v; };
+
+  for(const ev of (S.events||[])){
+    const p = ev.payload || {};
+    if(ev.type === 'start_period'){
+      q = Number(p.nQ) || q;
+      continue;
+    }
+    // punti avversari manuali
+    if(ev.type === 'opp_point'){
+      const v = Number(p.value)||0;
+      if(myIsHome) addA(v); else addH(v);
+      continue;
+    }
+    // tiri/FT mia squadra
+    if(ev.type === 'shot' && p.made){
+      const v = Number(p.val)||2;
+      if(myIsHome) addH(v); else addA(v);
+      continue;
+    }
+    if(ev.type === 'ft' && p.made){
+      if(myIsHome) addH(1); else addA(1);
+      continue;
+    }
+  }
+  return {H,A};
+}
+
+// punti per quarto del singolo giocatore (1..nQ incl OT)
+function playerPointsByQuarter(playerNum){
+  const pts = [];
+  let q = 1;
+  const pid = String(playerNum);
+
+  for(const ev of (S.events||[])){
+    const p = ev.payload || {};
+    if(ev.type === 'start_period'){ q = Number(p.nQ) || q; continue; }
+
+    if(ev.type === 'shot' && p.made && String(p.player) === pid){
+      const v = Number(p.val)||2;
+      pts[q] = (pts[q]||0) + v;
+    }
+    if(ev.type === 'ft' && p.made && String(p.player) === pid){
+      pts[q] = (pts[q]||0) + 1;
+    }
+  }
+  return pts;
+}
+
+// tempo giocato per quarto (solo Q1..Q4), totale = somma quarti conclusi (esclude quarto in corso)
+function playerTimeByQuarterCompleted(playerNum){
+  const pid = String(playerNum);
+  const t = [0,0,0,0,0]; // 1..4
+  const stints = S.stints || [];
+
+  const currentQ = Number(S.nQ)||1;
+  const ended = (S.status === 'ended');
+
+  for(const s of stints){
+    if(String(s.player) !== pid) continue;
+    const q = Number(s.q)||0;
+    if(q<1 || q>4) continue;
+
+    // includi SOLO quarti conclusi (oppure tutti se partita terminata)
+    if(!ended && q >= currentQ) continue;
+
+    const out = (s.outRem===null)?0:Number(s.outRem)||0;
+    const inn = Number(s.inRem)||0;
+    t[q] += Math.max(0, inn - out);
+  }
+
+  const total = t[1]+t[2]+t[3]+t[4];
+  return {t, total};
+}
+
+
+// tempo giocato negli OT conclusi (OT1..), totale OT
+function playerTimeByOTCompleted(playerNum){
+  const pid = String(playerNum);
+  const maxQ = Math.max(4, Number(S.nQ)||1);
+  const otCount = Math.max(0, maxQ - 4);
+  const t = Array(otCount+1).fill(0); // 1..otCount
+  const stints = S.stints || [];
+
+  const currentQ = Number(S.nQ)||1;
+  const ended = (S.status === 'ended');
+
+  for(const s of stints){
+    if(String(s.player) !== pid) continue;
+    const q = Number(s.q)||0;
+    if(q <= 4) continue;
+
+    const idx = q - 4;
+    if(idx < 1 || idx > otCount) continue;
+
+    // includi SOLO OT conclusi (oppure tutti se partita terminata)
+    if(!ended && q >= currentQ) continue;
+
+    const out = (s.outRem===null)?0:Number(s.outRem)||0;
+    const inn = Number(s.inRem)||0;
+    t[idx] += Math.max(0, inn - out);
+  }
+
+  const total = t.reduce((a,b)=>a+b,0);
+  return {t, total, otCount};
+}
+
+function renderQTable(elId, labels, values, valueFormatter){
+  const el = $(elId);
+  if(!el) return;
+  el.innerHTML = '';
+  for(let i=0;i<labels.length;i++){
+    const lab = labels[i];
+    const val = values[i];
+    const v = valueFormatter ? valueFormatter(val) : (val||0);
+    el.innerHTML += `<div class="qCell"><div class="qt">${lab}</div><div class="qv">${v}</div></div>`;
+  }
+}
+
 function pointsFor(sel){
   if(sel==='ALL'){ let tot=0; S.myRoster.forEach(pl=>tot+=(S.p[pl.num]?.pts||0)); return tot; }
   return S.p[String(sel)]?.pts||0;
@@ -2155,6 +2534,117 @@ function minsFor(sel){
   const m=minsByPlayer();
   if(sel==='ALL') return null; // hide in squadra
   return m[String(sel)]||0;
+}
+
+/* ===== STATS LIVE: filtro per quarto (calcolo da eventi) ===== */
+let statsQSel = 'ALL'; // 'ALL' | 1 | 2 | 3 | 4 | 'OT1' | 'OT2' ...
+
+function _qKeyToNum(qKey){
+  if(qKey==='ALL') return null;
+  if(typeof qKey==='number') return qKey;
+  if(/^OT\d+$/.test(qKey)) return 4 + Number(qKey.slice(2));
+  const n = Number(qKey);
+  return Number.isFinite(n) ? n : null;
+}
+
+function _eventQuartered(events){
+  let q = 1;
+  const out = [];
+  for(const ev of (events||[])){
+    const p = ev.payload || {};
+    if(ev.type==='start_period'){
+      q = Number(p.nQ) || q;
+      continue;
+    }
+    out.push({q, ev});
+  }
+  return out;
+}
+
+function aggStatsByEvents(sel, qSel){
+  const only = (sel && sel!=='ALL') ? String(sel) : null;
+  const qNum = _qKeyToNum(qSel);
+  const st = {
+    twoM:0,twoA:0,threeM:0,threeA:0,ftM:0,ftA:0,
+    foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,
+    shots:[]
+  };
+
+  for(const item of _eventQuartered(S.events)){
+    const q = item.q;
+    const ev = item.ev;
+    const p = ev.payload || {};
+
+    if(qNum && q!==qNum) continue;
+
+    if(ev.type==='shot'){
+      if(only && String(p.player)!==only) continue;
+      const val = Number(p.val)||2;
+      const made = !!p.made;
+      if(val===2){ st.twoA++; if(made) st.twoM++; }
+      if(val===3){ st.threeA++; if(made) st.threeM++; }
+      st.shots.push({x:p.x,y:p.y,val, made});
+      continue;
+    }
+
+    if(ev.type==='ft'){
+      if(only && String(p.player)!==only) continue;
+      st.ftA++; if(!!p.made) st.ftM++;
+      continue;
+    }
+
+    if(ev.type==='foul_made'){
+      if(only && String(p.player)!==only) continue;
+      st.foulMade++;
+      continue;
+    }
+
+    if(ev.type==='foul_suf'){
+      if(only && String(p.myPlayer)!==only) continue;
+      st.foulSuf++;
+      continue;
+    }
+
+    if(ev.type==='quick'){
+      if(only && String(p.player)!==only) continue;
+      if(p.kind==='turnover') st.to++;
+      if(p.kind==='steal') st.stl++;
+      if(p.kind==='reb_off') st.ro++;
+      if(p.kind==='reb_def') st.rd++;
+      continue;
+    }
+  }
+
+  return st;
+}
+
+function buildQuarterBar(){
+  const bar = $('qFilterBar');
+  if(!bar) return;
+
+  const maxQ = Math.max(4, Number(S.nQ)||1);
+  const otCount = Math.max(0, maxQ - 4);
+
+  const btn = (key,label)=>{
+    const b=document.createElement('button');
+    b.className='qbtn'+(statsQSel===key?' act':'');
+    b.textContent=label;
+    b.onclick=()=>{ statsQSel=key; renderStats(); };
+    return b;
+  };
+
+  bar.innerHTML='';
+  bar.appendChild(btn('ALL','TUTTA'));
+  bar.appendChild(btn(1,'1Q'));
+  bar.appendChild(btn(2,'2Q'));
+  bar.appendChild(btn(3,'3Q'));
+  bar.appendChild(btn(4,'4Q'));
+
+  if(otCount>0){
+    for(let i=1;i<=otCount;i++){
+      bar.appendChild(btn('OT'+i,'OT'+i));
+    }
+  }
 }
 function aggStats(sel){
   const only=(sel && sel!=='ALL')?String(sel):null;
@@ -2252,7 +2742,7 @@ function buildStatsSelector(){
       <div class="spBottom">
         <span class="spFoulBox">${fouls}</span>
         <span class="spSpec">${spec ? esc(spec) : ''}</span>
-        <span class="spPts">${pts} pt</span>
+        <span class="spPtsBox">${pts} pt</span>
       </div>
     `, true);
   });
@@ -2297,9 +2787,100 @@ function updateStatsBoard(){
 }
 
 function renderStats(){
+  // Ripristino logica mappe tiri del file "indexOKOK.html":
+  // su Android/WebView e file://content:// questa strada e' la piu' affidabile.
+  // S.shots viene popolato dal replay() in base agli eventi.
   buildStatsSelector();
   updateStatsBoard();
   const st=aggStats(statsSel);
+// ===== PARZIALI SQUADRA (tra tabellone e bottone squadra) =====
+const sq = scoreByQuarter();
+const maxQ = Math.max(4, Number(S.nQ)||1);
+const otCount = Math.max(0, maxQ - 4);
+
+// tabella 1Q..4Q con formato "H-A"
+const qLabels = ['1Q','2Q','3Q','4Q'];
+const qVals = [1,2,3,4].map(k => `${sq.H[k]||0}-${sq.A[k]||0}`);
+renderQTable('teamQPartials', qLabels, qVals, x=>x);
+
+// OT solo se esistono
+const otWrap = $('teamOTPartialsWrap');
+if(otWrap){
+  if(otCount>0){
+    otWrap.classList.remove('hidden');
+    const labs = Array.from({length:otCount}, (_,i)=>`OT${i+1}`);
+    const vals = Array.from({length:otCount}, (_,i)=>{
+      const k = 5+i;
+      return `${sq.H[k]||0}-${sq.A[k]||0}`;
+    });
+    renderQTable('teamOTPartials', labs, vals, x=>x);
+  }else{
+    otWrap.classList.add('hidden');
+  }
+}
+
+// ===== SEZIONI GIOCATORE: tempo+punti per quarto =====
+const isTeam = (statsSel === 'ALL');
+const timeWrap = $('playerTimeWrap');
+const ptsWrap  = $('playerPtsWrap');
+if(timeWrap && ptsWrap){
+  if(isTeam){
+    timeWrap.classList.add('hidden');
+    ptsWrap.classList.add('hidden'); // in squadra non mostrare questi grid
+  }else{
+    timeWrap.classList.remove('hidden');
+    ptsWrap.classList.remove('hidden');
+
+    const pid = String(statsSel);
+    const pp = playerPointsByQuarter(pid);
+
+    // punti Q1..Q4 + totale
+    const pQ1=pp[1]||0, pQ2=pp[2]||0, pQ3=pp[3]||0, pQ4=pp[4]||0;
+    $('pQ1').textContent=pQ1; $('pQ2').textContent=pQ2; $('pQ3').textContent=pQ3; $('pQ4').textContent=pQ4;
+    $('pTot').textContent=(pQ1+pQ2+pQ3+pQ4);
+
+    // tempo Q1..Q4 (solo quarti conclusi)
+    const tt = playerTimeByQuarterCompleted(pid);
+    $('tQ1').textContent=fmtMMSS(tt.t[1]); $('tQ2').textContent=fmtMMSS(tt.t[2]);
+    $('tQ3').textContent=fmtMMSS(tt.t[3]); $('tQ4').textContent=fmtMMSS(tt.t[4]);
+
+    // totale tempo personale = quarti regolamentari + OT (coerente con il contatore in "partita infinita")
+    let totalTime = Number(tt.total)||0;
+    if(otCount>0){
+      const otT = playerTimeByOTCompleted(pid);
+      for(let i=1;i<=otCount;i++) totalTime += Number(otT.t[i])||0;
+    }
+    $('tTot').textContent=fmtMMSS(totalTime);
+
+    // OT minuti giocatore solo se esistono
+    const tOtWrap = $('playerOTTimeWrap');
+    if(tOtWrap){
+      if(otCount>0){
+        const otT = playerTimeByOTCompleted(pid);
+        tOtWrap.classList.remove('hidden');
+        const labs = Array.from({length:otCount}, (_,i)=>`OT${i+1}`);
+        const vals = Array.from({length:otCount}, (_,i)=> (otT.t[i+1]||0));
+        renderQTable('playerOTMinutes', labs, vals, v=>fmtMMSS(v||0));
+      }else{
+        tOtWrap.classList.add('hidden');
+      }
+    }
+
+    // OT punti giocatore solo se esistono
+    const pOtWrap = $('playerOTWrap');
+    if(pOtWrap){
+      if(otCount>0){
+        pOtWrap.classList.remove('hidden');
+        const labs = Array.from({length:otCount}, (_,i)=>`OT${i+1}`);
+        const vals = Array.from({length:otCount}, (_,i)=> pp[5+i]||0 );
+        renderQTable('playerOTPoints', labs, vals, v=>v||0);
+      }else{
+        pOtWrap.classList.add('hidden');
+      }
+    }
+  }
+}
+
   $('k2').textContent=`${st.twoM}/${st.twoA}`; $('k2p').textContent=pct(st.twoM,st.twoA);
   $('k3').textContent=`${st.threeM}/${st.threeA}`; $('k3p').textContent=pct(st.threeM,st.threeA);
   $('kft').textContent=`${st.ftM}/${st.ftA}`; $('kftp').textContent=pct(st.ftM,st.ftA);
@@ -2308,32 +2889,23 @@ function renderStats(){
   if(statsSel !== 'ALL'){
     const p = S.p[String(statsSel)] || {};
     const spec = (p.specials || []).join('');
-    $('kfmade').innerHTML = st.foulMade + (spec ? ` <span class="foulSpec">${esc(spec)}</span>` : '');
+    $("kfmade").innerHTML = String(st.foulMade) + (spec ? ' <span class="foulSpec">' + esc(spec) + '</span>' : '');
   }else{
-    // FALLI FATTI + falli speciali (T/U/D) in rosso per giocatore
-  if(statsSel !== 'ALL'){
-    const p = S.p[String(statsSel)] || {};
-    const spec = (p.specials || []).join('');
-    $('kfmade').innerHTML = st.foulMade + (spec ? ` <span class="foulSpec">${esc(spec)}</span>` : '');
-  }else{
-    $('kfmade').textContent = st.foulMade;
-  }
+    $("kfmade").textContent = st.foulMade;
   }
 
-  $('kfsuf').textContent=st.foulSuf;
-  $('kto').textContent=st.to;
-  $('kstl').textContent=st.stl;
-  $('kro').textContent=st.ro;
-  $('krd').textContent=st.rd;
-
-  $('ptsSel').textContent=pointsFor(statsSel);
-
-  const m=minsFor(statsSel);
-  if(m===null){ $('minsBox').style.display='none'; }
-  else { $('minsBox').style.display='block'; $('minSel').textContent=fmt(m); }
+  $("kfsuf").textContent = st.foulSuf;
+  $("kto").textContent = st.to;
+  $("kstl").textContent = st.stl;
+  $("kro").textContent = st.ro;
+  $("krd").textContent = st.rd;
 
   drawHeat(st.shots);
   drawChart(st.shots);
+
+
+
+
 }
 function openStats(){ statsSel='ALL'; renderStats(); openModal('modalStats'); }
 
@@ -2755,253 +3327,6 @@ function exportExcel(){
 }
 
 /* ===================== PDF EXPORT ===================== */
-async function exportPDF(){
-  // require libs
-  const jspdf = window.jspdf?.jsPDF;
-  if(!jspdf || !window.html2canvas){
-    alert('Librerie PDF non caricate. Serve connessione almeno la prima volta.');
-    return;
-  }
-
-  // build pages as DOM, render with html2canvas, add to jsPDF
-  const doc = new jspdf({orientation:'portrait', unit:'pt', format:'a4'});
-  const W=595.28, H=841.89;
-
-  // Helper: add DOM node as page
-  async function addNodeAsPage(node, first=false){
-    document.body.appendChild(node);
-    const canvas = await html2canvas(node, {backgroundColor:'#121212', scale:2});
-    const img = canvas.toDataURL('image/png');
-    const ratio = Math.min(W/canvas.width, H/canvas.height);
-    const w = canvas.width*ratio;
-    const h = canvas.height*ratio;
-    const x = (W-w)/2;
-    const y = 20;
-    if(!first) doc.addPage();
-    doc.addImage(img,'PNG',x,y,w,h);
-    node.remove();
-  }
-
-  // Page 1: TEAM summary + maps
-  const teamNode = buildPDFTeamPage();
-  await addNodeAsPage(teamNode, true);
-
-  // Player pages: each player with small shot chart
-  for(const pl of S.myRoster){
-    const node = buildPDFPlayerPage(pl.num);
-    await addNodeAsPage(node, false);
-  }
-
-  doc.save('Scout.pdf');
-}
-
-function buildPDFBaseContainer(title){
-  const wrap=document.createElement('div');
-  wrap.style.width='595px';
-  wrap.style.minHeight='840px';
-  wrap.style.background='#121212';
-  wrap.style.color='#fff';
-  wrap.style.fontFamily='system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-  wrap.style.padding='18px';
-
-  const h=document.createElement('div');
-  h.style.display='flex';
-  h.style.justifyContent='space-between';
-  h.style.alignItems='baseline';
-  h.innerHTML=`<div style="font-weight:1000;font-size:18px">${esc(title)}</div>
-               <div style="font-weight:900;color:#bdbdbd;font-size:12px">${esc(S.nameH)} vs ${esc(S.nameA)} • ${esc(label())}</div>`;
-  wrap.appendChild(h);
-
-  const line=document.createElement('div');
-  line.style.height='1px'; line.style.background='#2a2a2a'; line.style.margin='10px 0 14px';
-  wrap.appendChild(line);
-
-  return wrap;
-}
-
-function buildPDFTeamPage(){
-  const wrap=buildPDFBaseContainer('STATISTICHE SQUADRA');
-
-  // stats aggregation team
-  const st=aggStats('ALL');
-
-  const top=document.createElement('div');
-  top.style.display='grid';
-  top.style.gridTemplateColumns='1fr 1fr';
-  top.style.gap='10px';
-  top.innerHTML=`
-    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-      <div style="color:#bdbdbd;font-weight:900;font-size:12px">PUNTEGGIO</div>
-      <div style="color:#ffeb3b;font-weight:1000;font-size:24px;margin-top:6px">${S.sH} - ${S.sA}</div>
-    </div>
-    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-      <div style="color:#bdbdbd;font-weight:900;font-size:12px">FALLI DI SQUADRA</div>
-      <div style="font-weight:1000;font-size:18px;margin-top:6px">${S.fH} / ${S.fA} <span style="color:#ffeb3b">T:${S.tH}/${S.tA}</span></div>
-    </div>
-  `;
-  wrap.appendChild(top);
-
-  const box=document.createElement('div');
-  box.style.display='grid';
-  box.style.gridTemplateColumns='repeat(3,1fr)';
-  box.style.gap='10px';
-  box.style.marginTop='10px';
-  box.innerHTML=`
-    ${pdfKpi('TIRI DA 2', `${st.twoM}/${st.twoA}`, pct(st.twoM,st.twoA))}
-    ${pdfKpi('TIRI DA 3', `${st.threeM}/${st.threeA}`, pct(st.threeM,st.threeA))}
-    ${pdfKpi('LIBERI', `${st.ftM}/${st.ftA}`, pct(st.ftM,st.ftA))}
-  `;
-  wrap.appendChild(box);
-
-  const box2=document.createElement('div');
-  box2.style.display='grid';
-  box2.style.gridTemplateColumns='repeat(4,1fr)';
-  box2.style.gap='10px';
-  box2.style.marginTop='10px';
-  box2.innerHTML=`
-    ${pdfKpiSimple('FALLI FATTI', st.foulMade)}
-    ${pdfKpiSimple('FALLI SUBITI', st.foulSuf)}
-    ${pdfKpiSimple('PERSE', st.to)}
-    ${pdfKpiSimple('RECUP.', st.stl)}
-  `;
-  wrap.appendChild(box2);
-
-  const maps=document.createElement('div');
-  maps.style.display='grid';
-  maps.style.gridTemplateColumns='1fr 1fr';
-  maps.style.gap='10px';
-  maps.style.marginTop='14px';
-
-  const heat=pdfMapCard('HEATMAP', 'heatCanvas');
-  const chart=pdfMapCard('SHOT CHART', 'shotCanvas');
-  maps.appendChild(heat);
-  maps.appendChild(chart);
-  wrap.appendChild(maps);
-
-  return wrap;
-}
-
-function pdfKpi(title, value, sub){
-  return `
-  <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-    <div style="color:#bdbdbd;font-weight:900;font-size:12px">${esc(title)}</div>
-    <div style="font-weight:1000;font-size:18px;margin-top:6px">${esc(value)}</div>
-    <div style="color:#c8c8c8;font-weight:900;font-size:12px;margin-top:6px">${esc(sub)}</div>
-  </div>`;
-}
-function pdfKpiSimple(title, value){
-  return `
-  <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-    <div style="color:#bdbdbd;font-weight:900;font-size:12px">${esc(title)}</div>
-    <div style="font-weight:1000;font-size:18px;margin-top:6px">${esc(value)}</div>
-  </div>`;
-}
-
-function pdfMapCard(title, canvasId){
-  const card=document.createElement('div');
-  card.style.background='#101010';
-  card.style.border='1px solid #2a2a2a';
-  card.style.borderRadius='14px';
-  card.style.padding='10px';
-  card.innerHTML=`<div style="color:#bdbdbd;font-weight:900;font-size:12px;text-align:center;margin-bottom:6px">${esc(title)}</div>`;
-  const img=document.createElement('img');
-  const cv=document.getElementById(canvasId);
-  img.src=cv.toDataURL('image/png');
-  img.style.width='100%';
-  img.style.borderRadius='10px';
-  img.style.border='1px solid #2a2a2a';
-  card.appendChild(img);
-  return card;
-}
-
-function buildPDFPlayerPage(num){
-  const pl=S.myRoster.find(x=>x.num===String(num));
-  const st=aggStats(String(num));
-  const mins=minsByPlayer()[String(num)]||0;
-  const pts=S.p[String(num)]?.pts||0;
-  const sym=(S.p[String(num)]?.specials||[]).join('');
-
-  const wrap=buildPDFBaseContainer(`GIOCATORE #${num} ${pl?.name||''}`);
-
-  const top=document.createElement('div');
-  top.style.display='grid';
-  top.style.gridTemplateColumns='1fr 1fr 1fr';
-  top.style.gap='10px';
-  top.innerHTML=`
-    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-      <div style="color:#bdbdbd;font-weight:900;font-size:12px">MINUTI</div>
-      <div style="color:#ffeb3b;font-weight:1000;font-size:18px;margin-top:6px">${fmt(mins)}</div>
-    </div>
-    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-      <div style="color:#bdbdbd;font-weight:900;font-size:12px">PUNTI</div>
-      <div style="color:#ffeb3b;font-weight:1000;font-size:18px;margin-top:6px">${pts}</div>
-    </div>
-    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
-      <div style="color:#bdbdbd;font-weight:900;font-size:12px">SPECIALI</div>
-      <div style="font-weight:1000;font-size:18px;margin-top:6px">${esc(sym||'-')}</div>
-    </div>
-  `;
-  wrap.appendChild(top);
-
-  const box=document.createElement('div');
-  box.style.display='grid';
-  box.style.gridTemplateColumns='repeat(3,1fr)';
-  box.style.gap='10px';
-  box.style.marginTop='10px';
-  box.innerHTML=`
-    ${pdfKpi('TIRI DA 2', `${st.twoM}/${st.twoA}`, pct(st.twoM,st.twoA))}
-    ${pdfKpi('TIRI DA 3', `${st.threeM}/${st.threeA}`, pct(st.threeM,st.threeA))}
-    ${pdfKpi('LIBERI', `${st.ftM}/${st.ftA}`, pct(st.ftM,st.ftA))}
-  `;
-  wrap.appendChild(box);
-
-  const box2=document.createElement('div');
-  box2.style.display='grid';
-  box2.style.gridTemplateColumns='repeat(4,1fr)';
-  box2.style.gap='10px';
-  box2.style.marginTop='10px';
-  box2.innerHTML=`
-    ${pdfKpiSimple('F. FATTI', st.foulMade)}
-    ${pdfKpiSimple('F. SUB', st.foulSuf)}
-    ${pdfKpiSimple('PERSE', st.to)}
-    ${pdfKpiSimple('RECUP.', st.stl)}
-  `;
-  wrap.appendChild(box2);
-
-  // small shot chart
-  const shots=(S.shots||[]).filter(s=>s.player===String(num));
-  const small=document.createElement('div');
-  small.style.display='grid';
-  small.style.gridTemplateColumns='1fr 1fr';
-  small.style.gap='10px';
-  small.style.marginTop='14px';
-
-  // render on temp canvases small
-  const hcv=renderMiniHeat(shots);
-  const scv=renderMiniChart(shots);
-
-  small.appendChild(pdfImgCard('HEATMAP', hcv));
-  small.appendChild(pdfImgCard('SHOT CHART', scv));
-  wrap.appendChild(small);
-
-  return wrap;
-}
-
-function pdfImgCard(title, canvas){
-  const card=document.createElement('div');
-  card.style.background='#101010';
-  card.style.border='1px solid #2a2a2a';
-  card.style.borderRadius='14px';
-  card.style.padding='10px';
-  card.innerHTML=`<div style="color:#bdbdbd;font-weight:900;font-size:12px;text-align:center;margin-bottom:6px">${esc(title)}</div>`;
-  const img=document.createElement('img');
-  img.src=canvas.toDataURL('image/png');
-  img.style.width='100%';
-  img.style.borderRadius='10px';
-  img.style.border='1px solid #2a2a2a';
-  card.appendChild(img);
-  return card;
-}
 
 function renderMiniHeat(shots){
   const cv=document.createElement('canvas');
