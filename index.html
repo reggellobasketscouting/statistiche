@@ -11,6 +11,7 @@
 <!-- Firebase (LIVE LINK / realtime) -->
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#121212;--card:#1a1a1a;--card2:#101010;--bd:#2a2a2a;
@@ -1001,9 +1002,11 @@ function storageKey(){
 }
 
 function loadGamesIndex(){
+  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)) return CLOUD_GAMES_CACHE;
   try{ return JSON.parse(localStorage.getItem(GAMES_INDEX_KEY) || '[]'); }
   catch(e){ return []; }
 }
+
 function saveGamesIndex(list){
   try{ localStorage.setItem(GAMES_INDEX_KEY, JSON.stringify(list)); }catch(e){}
 }
@@ -1059,7 +1062,12 @@ function currentGameName(){
 
 
 function getSavedGameMeta(gameId){
-  // Legge il salvataggio della partita e calcola: squadre, stato, punteggio
+  // Cloud: usa metadati già in cache
+  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
+    const g = CLOUD_GAMES_CACHE.find(x=>String(x.id)===String(gameId));
+    if(g) return { nameH:g.nameH, nameA:g.nameA, status:g.status, sH:g.sH, sA:g.sA };
+  }
+  // Locale: legge il salvataggio della partita e calcola: squadre, stato, punteggio
   try{
     const raw = localStorage.getItem('BSP_V7_GAME_' + String(gameId));
     if(!raw) return null;
@@ -1094,6 +1102,7 @@ function getSavedGameMeta(gameId){
     return null;
   }
 }
+
 
 function renderHomeGames(){
   const host = document.getElementById('gamesList');
@@ -1146,8 +1155,30 @@ function openGamesHome(){
   openModal("modalStartup");
 }
 
-function renameGameById(id){
+async function renameGameById(id){
   id = String(id||'').trim();
+
+  // Cloud
+  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
+    const cur = CLOUD_GAMES_CACHE.find(g=>g.id===id);
+    if(!cur) return;
+
+    const name = prompt('Nuovo nome partita:', cur.name || '');
+    if(name === null) return;
+
+    const n = String(name).trim();
+    if(!n) return alert('Nome non valido');
+
+    const norm = normalizeGameName(n);
+    const dup = CLOUD_GAMES_CACHE.some(g => g.id !== id && g.normName === norm);
+    if(dup) return alert('Esiste già una partita con questo nome.');
+
+    await cloudRenameGame(id, n);
+    renderHomeGames();
+    return;
+  }
+
+  // Locale
   const games = loadGamesIndex();
   const cur = games.find(g=>g.id===id);
   if(!cur) return;
@@ -1169,23 +1200,47 @@ function renameGameById(id){
   renderHomeGames();
 }
 
-function deleteGameById(id){
+
+async function deleteGameById(id){
   id = String(id||'').trim();
+
+  // Cloud
+  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
+    const cur = CLOUD_GAMES_CACHE.find(g=>g.id===id);
+    if(!cur) return;
+
+    const label = cur.name || 'Senza nome';
+    if(!confirm('Eliminare la partita "'+label+'"?\n\nQuesta azione non si può annullare.')) return;
+
+    await cloudDeleteGame(id);
+
+    if(CURRENT_GAME_ID === id){
+      setCurrentGame(null);
+      initDefaults();
+      bootstrapRosterData();
+      renderRoster();
+      updateUI();
+    }
+
+    renderHomeGames();
+    return;
+  }
+
+  // Locale
   const games = loadGamesIndex();
   const cur = games.find(g=>g.id===id);
   if(!cur) return;
 
   const label = cur.name || 'Senza nome';
-  if(!confirm(`Eliminare la partita "${label}"?\n\nQuesta azione non si può annullare.`)) return;
+  if(!confirm(`Eliminare la partita "${label}"?
 
-  // cancella il salvataggio della partita
+Questa azione non si può annullare.`)) return;
+
   try{ localStorage.removeItem('BSP_V7_GAME_' + id); }catch(e){}
 
-  // rimuove dall’indice
   const next = games.filter(g=>g.id!==id);
   saveGamesIndex(next);
 
-  // se era la partita corrente, stacca la corrente e torna alla home
   if(CURRENT_GAME_ID === id){
     setCurrentGame(null);
 
@@ -1201,26 +1256,59 @@ function deleteGameById(id){
   }
 }
 
-function newGameFlow(){
-  const name = prompt("Nome partita (unico):");
+
+async function newGameFlow(){
+  const name = prompt('Nome partita (unico):');
   if(!name) return;
 
   const norm = normalizeGameName(name);
-  const games = loadGamesIndex();
-  if(games.some(g=>g.normName===norm)){
-    alert("Esiste già una partita con questo nome ❌");
-    return;
+
+  // Se loggato: controlla duplicati su cache cloud
+  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
+    if(CLOUD_GAMES_CACHE.some(g=>g.normName===norm)){
+      alert('Esiste già una partita con questo nome ❌');
+      return;
+    }
+  }else{
+    const games = loadGamesIndex();
+    if(games.some(g=>g.normName===norm)){
+      alert('Esiste già una partita con questo nome ❌');
+      return;
+    }
   }
 
   const id = makeGameId(name);
-  games.push({
-    id,
-    name: String(name).trim(),
-    normName: norm,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  });
-  saveGamesIndex(games);
+
+  // Cloud: crea entry indice
+  if(isAuthed() && FB_DB){
+    try{
+      await cloudIndexRef().child(String(id)).set({
+        name: String(name).trim(),
+        normName: norm,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        nameH: 'CASA',
+        nameA: 'TRASFERTA',
+        status: 'idle',
+        sH: 0,
+        sA: 0
+      });
+      await refreshCloudIndex();
+    }catch(e){
+      alert('Errore cloud index: '+(e && e.message ? e.message : e));
+    }
+  }else{
+    // Locale: aggiorna indice
+    const games = loadGamesIndex();
+    games.push({
+      id,
+      name: String(name).trim(),
+      normName: norm,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+    saveGamesIndex(games);
+  }
 
   setCurrentGame(id);
 
@@ -1233,14 +1321,29 @@ function newGameFlow(){
   replay();
   updateUI();
 
-  autosave(); // crea subito il salvataggio della nuova partita
+  autosave(); // crea subito il salvataggio
 
   closeModal('modalStartup');
-  openModal('modalSetup'); // vai al setup
+  openModal('modalSetup');
 }
 
-function openGameById(id){
+
+async function openGameById(id){
   setCurrentGame(id);
+
+  // Cloud first (se loggato)
+  if(isAuthed() && FB_DB){
+    try{
+      const state = await cloudLoadGame(id);
+      if(state){
+        localStorage.setItem(storageKey(), JSON.stringify(state));
+        // anche chiave diretta (utile per funzioni legacy)
+        localStorage.setItem('BSP_V7_GAME_' + String(id), JSON.stringify(state));
+      }
+    }catch(e){
+      // fallback locale
+    }
+  }
 
   const ok = loadAutosave();
   closeModal('modalStartup');
@@ -1253,6 +1356,7 @@ function openGameById(id){
     openModal('modalSetup');
   }
 }
+
 /* ===================== /MULTI-GAME STORAGE ===================== */
 
 const S = {
@@ -1297,6 +1401,131 @@ const IS_VIEWER = qs('view') === '1';
 let CLOUD_GAME_ID = qs('game') || null;
 let FB_DB = null;
 let FB_REF = null;
+let FB_AUTH = null;
+let AUTH_UID = null;
+let AUTH_USER = null;
+let CLOUD_GAMES_CACHE = null; // array di meta partite per utente
+
+function isAuthed(){ return !!AUTH_UID; }
+
+function cloudIndexRef(){ return FB_DB.ref('users/'+AUTH_UID+'/index'); }
+function cloudGameRef(gameId){ return FB_DB.ref('users/'+AUTH_UID+'/games/'+String(gameId)); }
+
+function calcScoreFromState(d){
+  try{
+    const noi = d.noi || 'Home';
+    const myIsHome = (noi === 'Home');
+    const events = Array.isArray(d.events) ? d.events : [];
+    let sH=0, sA=0;
+    for(const ev of events){
+      const p = ev && ev.payload ? ev.payload : {};
+      if(ev.type === 'opp_point'){
+        const v = Number(p.value)||0;
+        if(myIsHome) sA += v; else sH += v;
+      }else if(ev.type === 'shot'){
+        if(p.made){
+          const v = Number(p.val)||2;
+          if(myIsHome) sH += v; else sA += v;
+        }
+      }else if(ev.type === 'ft'){
+        if(p.made){
+          if(myIsHome) sH += 1; else sA += 1;
+        }
+      }
+    }
+    return {sH,sA};
+  }catch(e){ return {sH:0,sA:0}; }
+}
+
+async function refreshCloudIndex(){
+  if(!isAuthed() || !FB_DB) { CLOUD_GAMES_CACHE = null; return []; }
+  const snap = await cloudIndexRef().once('value');
+  const obj = snap.val() || {};
+  const arr = [];
+  for(const id of Object.keys(obj)){
+    const meta = obj[id] || {};
+    arr.push({
+      id,
+      name: meta.name || 'Senza nome',
+      normName: meta.normName || normalizeGameName(meta.name || ''),
+      createdAt: meta.createdAt || 0,
+      updatedAt: meta.updatedAt || 0,
+      nameH: meta.nameH || 'CASA',
+      nameA: meta.nameA || 'TRASFERTA',
+      status: meta.status || 'idle',
+      sH: Number.isFinite(meta.sH) ? meta.sH : 0,
+      sA: Number.isFinite(meta.sA) ? meta.sA : 0
+    });
+  }
+  arr.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  CLOUD_GAMES_CACHE = arr;
+  return arr;
+}
+
+async function cloudSaveGame(gameId, state){
+  if(!isAuthed() || !FB_DB) return;
+  const now = Date.now();
+  // salva stato
+  await cloudGameRef(gameId).set({ updatedAt: now, state: state });
+  // upsert meta indice
+  const sc = calcScoreFromState(state||{});
+  const meta = {
+    name: (currentGameName() || state?.title || state?.name || state?.gameName || (state?.nameH && state?.nameA ? (state.nameH+' - '+state.nameA) : 'Senza nome')),
+    normName: normalizeGameName(currentGameName() || ''),
+    updatedAt: now,
+    nameH: state?.nameH || 'CASA',
+    nameA: state?.nameA || 'TRASFERTA',
+    status: state?.status || 'idle',
+    sH: sc.sH,
+    sA: sc.sA
+  };
+  // createdAt: se non esiste, mettilo
+  const createdSnap = await cloudIndexRef().child(String(gameId)+'/createdAt').once('value');
+  if(!createdSnap.exists()) meta['createdAt'] = now;
+  await cloudIndexRef().child(String(gameId)).update(meta);
+  // aggiorna cache locale
+  try{ await refreshCloudIndex(); }catch(e){}
+}
+
+async function cloudLoadGame(gameId){
+  if(!isAuthed() || !FB_DB) return null;
+  const snap = await cloudGameRef(gameId).once('value');
+  const v = snap.val();
+  return (v && v.state) ? v.state : null;
+}
+
+async function cloudRenameGame(gameId, newName){
+  if(!isAuthed() || !FB_DB) return;
+  const now = Date.now();
+  await cloudIndexRef().child(String(gameId)).update({
+    name: newName,
+    normName: normalizeGameName(newName),
+    updatedAt: now
+  });
+  await refreshCloudIndex();
+}
+
+async function cloudDeleteGame(gameId){
+  if(!isAuthed() || !FB_DB) return;
+  await cloudGameRef(gameId).remove();
+  await cloudIndexRef().child(String(gameId)).remove();
+  await refreshCloudIndex();
+}
+
+async function signIn(){
+  if(!initFirebase()) return;
+  const prov = new firebase.auth.GoogleAuthProvider();
+  try{
+    await FB_AUTH.signInWithPopup(prov);
+  }catch(e){
+    try{ await FB_AUTH.signInWithRedirect(prov); }
+    catch(err){ alert('Login fallito: '+(err && err.message ? err.message : err)); }
+  }
+}
+
+async function signOutUser(){
+  try{ await FB_AUTH.signOut(); }catch(e){}
+}
 
 function initFirebase(){
   const firebaseConfig = window.__FIREBASE_CONFIG__ || {
@@ -1315,6 +1544,7 @@ function initFirebase(){
       firebase.initializeApp(firebaseConfig);
     }
     FB_DB = firebase.database();
+    FB_AUTH = firebase.auth();
     return true;
   }catch(e){
     alert("Firebase non configurato o non disponibile.");
@@ -3393,9 +3623,17 @@ function autosave(){
     localStorage.setItem(storageKey(), JSON.stringify(data));
     touchCurrentGameUpdatedAt();
     renderHomeGames(); // aggiorna lista se il popup è aperto
+
+    // LIVE link (partita singola)
     cloudPush(data);
+
+    // ARCHIVIO (multi-device) con login
+    if(isAuthed() && CURRENT_GAME_ID){
+      cloudSaveGame(CURRENT_GAME_ID, data);
+    }
   }catch(e){}
 }
+
 function serializeState(){
   return {
     version:7,
@@ -3544,16 +3782,80 @@ document.addEventListener('DOMContentLoaded',()=>{
     return;
   }
 
-  // Scout: carica ultima partita usata (se esiste) e mostra elenco
-loadCurrentGameFromStorage();
-if(CURRENT_GAME_ID){
-  loadAutosave();
-  replay();
-  updateUI();
-}
-renderHomeGames();
-openModal('modalStartup');
-  
+  // Scout: login + archivio cloud
+  if(!initFirebase()){
+    // se Firebase non disponibile, fallback locale
+    loadCurrentGameFromStorage();
+    if(CURRENT_GAME_ID){
+      loadAutosave();
+      replay();
+      updateUI();
+    }
+    renderHomeGames();
+    openModal('modalStartup');
+    return;
+  }
+
+  // UI: aggiunge bottoni login/logout in home
+  (function injectAuthButtons(){
+    const top = document.querySelector('#modalStartup .topbar');
+    if(!top) return;
+    if(document.getElementById('authBtn')) return;
+    const b=document.createElement('button');
+    b.id='authBtn';
+    b.className='closeTop';
+    b.textContent='ACCEDI';
+    b.onclick=()=> signIn();
+    top.insertBefore(b, top.firstChild);
+
+    const out=document.createElement('button');
+    out.id='logoutBtn';
+    out.className='closeTop';
+    out.style.background='#3a1f1f';
+    out.textContent='ESCI';
+    out.onclick=()=> signOutUser();
+    top.insertBefore(out, top.firstChild);
+  })();
+
+  FB_AUTH.onAuthStateChanged(async (user)=>{
+    AUTH_USER = user || null;
+    AUTH_UID = user ? user.uid : null;
+
+    const a=document.getElementById('authBtn');
+    const o=document.getElementById('logoutBtn');
+    if(a) a.style.display = user ? 'none' : '';
+    if(o) o.style.display = user ? '' : 'none';
+
+    if(!user){
+      CLOUD_GAMES_CACHE = null;
+      // mostra home con messaggio
+      renderHomeGames();
+      openModal('modalStartup');
+      const host = document.getElementById('gamesList');
+      if(host){
+        host.innerHTML = '<div class="muted2" style="font-size:12px;line-height:1.3">Per usare l’archivio online su piu’ dispositivi, fai <b>ACCEDI</b> (Google).<br/>Dopo l’accesso vedrai tutte le partite salvate nel cloud.</div>';
+      }
+      return;
+    }
+
+    await refreshCloudIndex();
+
+    // Se avevi una partita aperta in questo tab, prova a ricaricarla dal cloud
+    loadCurrentGameFromStorage();
+    if(CURRENT_GAME_ID){
+      try{
+        const st = await cloudLoadGame(CURRENT_GAME_ID);
+        if(st) localStorage.setItem(storageKey(), JSON.stringify(st));
+      }catch(e){}
+      loadAutosave();
+      replay();
+      updateUI();
+    }
+
+    renderHomeGames();
+    openModal('modalStartup');
+  });
+
 });
 </script>
 </body>
