@@ -734,10 +734,22 @@ body.viewer #modalStats{display:block!important;}
     <div><div class="pill">Sono CASA / TRASFERTA</div>
       <select id="noiSel"><option value="Home" selected>CASA</option><option value="Away">TRASFERTA</option></select>
     </div>
-    <div><div class="pill">Nomi squadre</div><input id="teamNames" type="text" placeholder="CASA;TRASFERTA"/></div>
+    <div class="muted2" style="font-size:11px;line-height:1.25;padding:10px 12px;border:1px solid #2e2e2e;border-radius:14px;background:#0f0f0f">
+      Tip: i nomi verranno mostrati nel tabellone e nel Live.    </div>
+    </div>
+
+  <div class="grid2" style="margin-top:10px">
+    <div><div class="pill">Squadra CASA</div><input id="teamHomeName" type="text" placeholder="Nome squadra CASA"/></div>
+    <div><div class="pill">Squadra TRASFERTA</div><input id="teamAwayName" type="text" placeholder="Nome squadra TRASFERTA"/></div>
+
   </div>
-  <div style="margin-top:10px"><div class="pill">Mia squadra: numero,nome (uno per riga)</div>
-    <textarea id="myTeamInput" placeholder="4,MARIO&#10;7,LUCA&#10;10,PAOLO"></textarea>
+  <div style="margin-top:10px">
+    <div class="pill">Mia squadra: NUMERO + NOME</div>
+    <div class="muted2" style="font-size:11px;margin-top:6px;line-height:1.25">Il numero accetta anche <b>0</b> e <b>00</b>.</div>
+    <div id="myTeamRows" style="margin-top:10px"></div>
+    <button type="button" class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="addMyRow('','')">➕ AGGIUNGI GIOCATORE</button>
+    <!-- legacy textarea (hidden) -->
+    <textarea id="myTeamInput" style="display:none"></textarea>
   </div>
   <div style="margin-top:10px"><div class="pill">Avversari: solo numero (uno per riga)</div>
     <textarea id="oppTeamInput" placeholder="3&#10;8&#10;12&#10;20&#10;25"></textarea>
@@ -1762,6 +1774,7 @@ function addSym(s,ch){ s=String(s||""); return s.includes(ch)?s:(s+ch); }
 function openModal(id){
   if(id==='modalFalliCheck') refreshFoulsCheck();
   if(id==='modalEvents') renderEvents();
+  if(id==='modalSetup') fillSetupUI();
   document.getElementById(id).classList.remove('hidden');
 }
 function closeModal(id){
@@ -1832,6 +1845,115 @@ function parseOppTeam(t){
 }
 
 
+
+
+function normalizePlayerNum(rawDigits){
+  var d = String(rawDigits||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d === '00') return '00';
+  if(d === '0') return '0';
+  // per altri numeri rimuovi zeri iniziali
+  var n = parseInt(d,10);
+  if(isNaN(n)) return '';
+  return String(n);
+}
+
+function addMyRow(num, name){
+  var box = $('myTeamRows');
+  if(!box) return;
+  var row = document.createElement('div');
+  row.style.display='grid';
+  row.style.gridTemplateColumns='90px 1fr 44px';
+  row.style.gap='8px';
+  row.style.alignItems='center';
+  row.style.marginBottom='8px';
+
+  var inNum = document.createElement('input');
+  inNum.type='text';
+  inNum.inputMode='numeric';
+  inNum.placeholder='NUM';
+  inNum.className='myNum';
+  inNum.value = num||'';
+
+  var inName = document.createElement('input');
+  inName.type='text';
+  inName.placeholder='NOME';
+  inName.className='myName';
+  inName.value = name||'';
+
+  var del = document.createElement('button');
+  del.type='button';
+  del.className='btnW';
+  del.textContent='✖';
+  del.style.background='#333';
+  del.style.color='#fff';
+  del.style.padding='10px 0';
+  del.onclick=function(){ row.remove(); };
+
+  row.appendChild(inNum);
+  row.appendChild(inName);
+  row.appendChild(del);
+  box.appendChild(row);
+}
+
+function buildMyTeamRowsFromRoster(roster){
+  var box = $('myTeamRows');
+  if(!box) return;
+  box.innerHTML='';
+  var list = Array.isArray(roster) ? roster : [];
+  if(!list.length){
+    for(var i=0;i<12;i++) addMyRow('','');
+    return;
+  }
+  for(var j=0;j<list.length;j++){
+    var pl=list[j]||{};
+    addMyRow(pl.num||'', pl.name||'');
+  }
+}
+
+function getMyTeamFromRows(){
+  var box = $('myTeamRows');
+  if(!box) return [];
+  var nums = Array.prototype.slice.call(box.querySelectorAll('input.myNum'));
+  var names = Array.prototype.slice.call(box.querySelectorAll('input.myName'));
+  var out=[];
+  var m = Math.min(nums.length, names.length);
+  for(var i=0;i<m;i++){
+    var dn = normalizePlayerNum(nums[i].value);
+    if(!dn) continue;
+    var nm = String(names[i].value||'').trim().toUpperCase();
+    out.push({num:dn, name:nm});
+  }
+  // unique by number (keep first)
+  var seen={};
+  var uniq=[];
+  for(var k=0;k<out.length;k++){
+    var key=String(out[k].num);
+    if(seen[key]) continue;
+    seen[key]=1;
+    uniq.push(out[k]);
+  }
+  return uniq;
+}
+
+function fillSetupUI(){
+  try{ $('quarterLenSel').value = String(S.quarterLenMin||10); }catch(e){}
+  try{ $('otLenSel').value = String(S.otLenMin||5); }catch(e){}
+  try{ $('noiSel').value = (S.noi==='Away'?'Away':'Home'); }catch(e){}
+
+  if($('teamHomeName')) $('teamHomeName').value = String(S.nameH||'CASA');
+  if($('teamAwayName')) $('teamAwayName').value = String(S.nameA||'TRASFERTA');
+
+  buildMyTeamRowsFromRoster(S.myRoster||[]);
+  if($('oppTeamInput')) $('oppTeamInput').value = (S.oppRoster||[]).map(String).join('\n');
+
+  var cloudInp = $('cloudIdInput');
+  if(cloudInp && !String(cloudInp.value||'').trim()){
+    var n = currentGameName();
+    if(n) cloudInp.value = n;
+  }
+}
+
 function connectCloudFromSetup(){
   const inp = document.getElementById('cloudIdInput');
   const id = (inp ? inp.value : '').trim();
@@ -1846,15 +1968,17 @@ function applySetup(){
   S.otLenMin=parseInt($('otLenSel').value,10)||5;
   S.noi=$('noiSel').value==='Away'?'Away':'Home';
 
-  const tn=String($('teamNames').value||'').trim();
-  if(tn.includes(';')){
-    const [h,a]=tn.split(';');
-    S.nameH=(h||'CASA').trim()||'CASA';
-    S.nameA=(a||'TRASFERTA').trim()||'TRASFERTA';
-  }
+  // Nomi squadre (2 campi)
+  var h = ($('teamHomeName') ? $('teamHomeName').value : '').trim();
+  var a = ($('teamAwayName') ? $('teamAwayName').value : '').trim();
+  S.nameH = h || 'CASA';
+  S.nameA = a || 'TRASFERTA';
 
-  const my=parseMyTeam($('myTeamInput').value);
-  const opp=parseOppTeam($('oppTeamInput').value);
+  // Roster mia squadra: da righe (fallback al legacy textarea se presente)
+  var my = getMyTeamFromRows();
+  if(!my.length && $('myTeamInput')) my = parseMyTeam($('myTeamInput').value);
+
+  var opp = parseOppTeam($('oppTeamInput').value);
 
   if(my.length) S.myRoster=my;
   if(opp.length) S.oppRoster=opp;
@@ -4108,9 +4232,15 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('quarterLenSel').value=String(S.quarterLenMin);
   $('otLenSel').value=String(S.otLenMin);
   $('noiSel').value=S.noi;
-  $('teamNames').value=`${S.nameH};${S.nameA}`;
-  $('myTeamInput').value=S.myRoster.map(p=>`${p.num}${p.name?','+p.name:''}`).join('\n');
-  $('oppTeamInput').value=S.oppRoster.join('\n');
+  if($('teamHomeName')) $('teamHomeName').value=String(S.nameH||'CASA');
+  if($('teamAwayName')) $('teamAwayName').value=String(S.nameA||'TRASFERTA');
+  buildMyTeamRowsFromRoster(S.myRoster||[]);
+  if($('oppTeamInput')) $('oppTeamInput').value=(S.oppRoster||[]).join('\n');
+  var cloudInp = $('cloudIdInput');
+  if(cloudInp && !String(cloudInp.value||'').trim()){
+    var n=currentGameName();
+    if(n) cloudInp.value=n;
+  }
 
   setupCourt();
   renderRoster();
