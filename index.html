@@ -3809,19 +3809,22 @@ document.addEventListener('DOMContentLoaded',()=>{
         const allow = t.includes('STAT') || t.includes('CHECK') || t.includes('EVENTI');
         if(!allow){ b.disabled=true; b.style.opacity='0.35'; }
 
-        function applyDeviceLayout(){
-  // tablet-like + landscape (soglia pratica)
-  const landscape = window.matchMedia("(orientation: landscape)").matches;
-  const tabletLike = Math.max(window.innerWidth, window.innerHeight) >= 900;
+      });
 
-  // In viewer NON serve cambiare layout (rimane “pulito”)
-  document.body.classList.toggle("tablet", tabletLike && landscape && !IS_VIEWER);
+      // ===== TABLET/PC LAYOUT SWITCH =====
+function applyDeviceLayout(){
+  // PC/tablet: diamo per buono “landscape” se lo schermo è largo
+  const wide = window.matchMedia("(min-width: 900px)").matches;
+  const landscape = window.matchMedia("(orientation: landscape)").matches || wide;
+
+  // attiva tablet layout su schermi grandi (PC/tablet)
+  document.body.classList.toggle("tablet", wide && landscape && !IS_VIEWER);
 }
 
 window.addEventListener("resize", applyDeviceLayout);
 window.addEventListener("orientationchange", applyDeviceLayout);
 applyDeviceLayout();
-      });
+
 
       // disabilita selezione giocatori e schermata azioni
       document.querySelectorAll('#rosterGrid .player-card').forEach(b=>{
