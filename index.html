@@ -1543,6 +1543,44 @@ const label=()=> (S.nQ>4?'OT':`Q${S.nQ}`);
 const toLim=()=> (S.nQ<=2?2:(S.nQ<=4?3:1));
 const lenSec=()=> ((S.nQ<=4?S.quarterLenMin:S.otLenMin)*60);
 const fmt=sec=>{ sec=Math.max(0,Math.floor(sec||0)); const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); };
+
+/* ===================== KEEP SCREEN AWAKE ===================== */
+// Screen Wake Lock API (quando disponibile). Su iOS/Safari funziona solo dopo un'interazione utente.
+let wakeLock = null;
+let wakeLockWanted = false;
+
+async function enableWakeLock(){
+  wakeLockWanted = true;
+  try{
+    if(!('wakeLock' in navigator)) return;
+    if(document.visibilityState !== 'visible') return;
+    // evita richieste duplicate
+    if(wakeLock) return;
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+  }catch(e){
+    // se fallisce (permessi/unsupported) non bloccare l'app
+    wakeLock = null;
+  }
+}
+
+function disableWakeLock(){
+  wakeLockWanted = false;
+  try{ if(wakeLock){ wakeLock.release(); } }catch(e){}
+  wakeLock = null;
+}
+
+function isGameRunning(){
+  try{ return S && S.status==='playing'; }catch(e){ return false; }
+}
+
+function syncWakeLock(prevStatus, nextStatus){
+  // Attiva solo durante la partita in corso (playing)
+  const was = (prevStatus==='playing');
+  const now = (nextStatus==='playing');
+  if(!was && now){ enableWakeLock(); }
+  if(was && !now){ disableWakeLock(); }
+}
 const pct=(m,a)=> a<=0?'0,00%':((m/a)*100).toFixed(2).replace('.',',')+'%';
 const uid=()=> 'e'+Math.random().toString(16).slice(2)+Date.now().toString(16);
 
@@ -2600,6 +2638,9 @@ function replay(){
   const __needRosterRebuild = (__prevStatus!==S.status) || (__prevInCKey!==__newInCKey);
   if(__needRosterRebuild) renderRoster();
   else updateUI();
+
+  // Keep screen awake during live play
+  try{ syncWakeLock(__prevStatus, S.status); }catch(e){}
 
   if(S.status==='ended'){
     if(!IS_VIEWER) openModal('modalGameOver');
@@ -4252,6 +4293,19 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderRoster();
   setBtnState();
   updateUI();
+
+  // Se l'utente cambia app/schermo e poi torna, il browser può rilasciare il Wake Lock.
+  // Lo riattiviamo automaticamente quando la pagina torna visibile e la partita è in corso.
+  document.addEventListener('visibilitychange', ()=>{
+    try{
+      if(document.visibilityState==='visible'){
+        if(isGameRunning() && wakeLockWanted) enableWakeLock();
+      }else{
+        // alcuni browser rilasciano automaticamente; puliamo il riferimento
+        wakeLock = null;
+      }
+    }catch(e){}
+  });
 
   // Scout mode: ri-connessione cloud se già impostata (per-partita)
   if(!IS_VIEWER){
