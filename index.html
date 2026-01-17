@@ -1300,7 +1300,7 @@ function renderHomeGames(){
           <div class="ev-actions" style="flex-wrap:wrap;justify-content:flex-end">
             <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
             <button class="b1" style="background:#10253a;color:#fff" onclick="copyLiveLinkForGame('${esc(g.id)}')">📡 LIVE LINK</button>
-            <button class="b1" style="background:#3b2a1a;color:#fff" onclick="toggleHubForGame('${esc(g.id)}')">⭐ HUB</button>
+            <button id="${'hubBtn_'+esc(String(g.id).replace(/[^a-zA-Z0-9_-]/g,'_'))}" class="b1" style="background:${hubFlagGet(g.id)?'#1f3a1f':'#3b2a1a'};color:#fff;border-color:${hubFlagGet(g.id)?'#2b6a2b':'#5a3b20'}" onclick="toggleHubForGame('${esc(g.id)}')">${hubFlagGet(g.id)?'✅ IN HUB':'⭐ HUB'}</button>
             <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
             <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
           </div>
@@ -1308,6 +1308,9 @@ function renderHomeGames(){
       </div>
     `;
   }).join('');
+  // Aggiorna l'etichetta del tasto HUB in base all'HUB online (se disponibile)
+  try{ syncHubFlagsFromCloud(); }catch(e){}
+
 }
 
 async function copyLiveLinkForGame(gameId){
@@ -1357,6 +1360,98 @@ async function copyLiveLinkForGame(gameId){
 
 
 // ===== HUB PUBBLICO (solo view) =====
+
+
+// --- HUB UI state (cache locale per mostrare subito IN/OUT) ---
+const HUB_FLAGS_KEY = 'BSP_HUB_FLAGS'; // JSON: { [gameId]: true }
+
+function hubFlagsLoad(){
+  try{ return JSON.parse(localStorage.getItem(HUB_FLAGS_KEY) || '{}') || {}; }
+  catch(e){ return {}; }
+}
+function hubFlagsSave(obj){
+  try{ localStorage.setItem(HUB_FLAGS_KEY, JSON.stringify(obj||{})); }catch(e){}
+}
+function hubFlagGet(gameId){
+  const o = hubFlagsLoad();
+  return !!(o && o[String(gameId)]);
+}
+function hubFlagSet(gameId, val){
+  const id = String(gameId);
+  const o = hubFlagsLoad();
+  if(val) o[id] = true; else delete o[id];
+  hubFlagsSave(o);
+}
+function escDomId(s){
+  return String(s||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+}
+function hubBtnId(gameId){
+  return 'hubBtn_' + escDomId(gameId);
+}
+function applyHubBtnState(gameId, inHub){
+  const b = document.getElementById(hubBtnId(gameId));
+  if(!b) return;
+  if(inHub){
+    b.textContent = '✅ IN HUB';
+    b.style.background = '#1f3a1f';
+    b.style.borderColor = '#2b6a2b';
+  }else{
+    b.textContent = '⭐ HUB';
+    b.style.background = '#3b2a1a';
+    b.style.borderColor = '#5a3b20';
+  }
+}
+
+// Prova a sincronizzare lo stato dall'HUB online (senza creare nulla e senza prompt)
+async function getHubIdFast(){
+  let hubId = '';
+  try{ hubId = String(localStorage.getItem('BSP_HUB_ID')||'').trim(); }catch(e){}
+  if(hubId) return hubId;
+  if(!isAuthed()) return '';
+  try{
+    const snap = await hubUserRef().once('value');
+    const v = snap && snap.val ? snap.val() : null;
+    hubId = (v && v.hubId) ? String(v.hubId||'').trim() : '';
+    if(hubId){ try{ localStorage.setItem('BSP_HUB_ID', hubId); }catch(e){} }
+  }catch(e){ hubId = ''; }
+  return hubId;
+}
+
+async function syncHubFlagsFromCloud(){
+  try{
+    const hubId = await getHubIdFast();
+    if(!hubId) return;
+
+    const snap = await hubItemsRef(hubId).once('value');
+    const items = snap && snap.val ? snap.val() : null;
+    const inHubCloudIds = new Set();
+    if(items){
+      Object.keys(items).forEach(k=>{
+        const it = items[k];
+        const cid = it && it.cloudId ? String(it.cloudId) : '';
+        if(cid) inHubCloudIds.add(cid);
+      });
+    }
+
+    const games = loadGamesIndex();
+    for(const g of games){
+      const gid = String(g.id);
+      let cloudId = '';
+      try{
+        const raw = localStorage.getItem('BSP_V7_GAME_' + gid);
+        if(raw){
+          const d = JSON.parse(raw);
+          cloudId = d && d.cloudId ? String(d.cloudId) : '';
+        }
+      }catch(e){ cloudId=''; }
+      cloudId = String(cloudId||'').trim();
+      if(!cloudId) continue;
+      const inHub = inHubCloudIds.has(cloudId);
+      hubFlagSet(gid, inHub);
+      applyHubBtnState(gid, inHub);
+    }
+  }catch(e){ console.warn('syncHubFlagsFromCloud', e); }
+}
 // Crea un HUB pubblico (leggibile senza login) con le partite che selezioni.
 // Scrittura: solo da utente loggato (Google).
 
@@ -1473,10 +1568,10 @@ async function toggleHubForGame(gameId){
     const exists = snap && snap.exists && snap.exists();
     if(exists){
       await itemRef.remove();
-      alert('Rimosso dal HUB ✅');
+      hubFlagSet(gameId, false); applyHubBtnState(gameId, false); alert('Rimosso dal HUB ✅');
     }else{
       await itemRef.set({ cloudId, title: title||cloudId, addedAt: Date.now(), by: AUTH_UID });
-      alert('Aggiunto al HUB ✅');
+      hubFlagSet(gameId, true); applyHubBtnState(gameId, true); alert('Aggiunto al HUB ✅');
     }
   }catch(e){
     console.warn(e);
