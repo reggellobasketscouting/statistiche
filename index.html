@@ -8,6 +8,9 @@
 <!-- XLSX (excel) -->
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
+<!-- NoSleep.js fallback (per file:// o browser senza Wake Lock) -->
+<script src="https://unpkg.com/nosleep.js@0.12.0/dist/NoSleep.min.js"></script>
+
 <!-- Firebase (LIVE LINK / realtime) -->
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -331,7 +334,7 @@ body.noScroll{overflow:hidden;}
 .spNum{
   font-weight:1000;
   font-size:26px;
-  color:#00ff00;
+  color:#fff;
   margin-top:4px;
 }
 .spBottom{
@@ -705,7 +708,10 @@ body.viewer #modalStats{display:block!important;}
 <div id="modalStartup" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">PARTITE SALVATE</h3>
-    <button class="closeTop" onclick="newGameFlow()">NUOVA</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="closeTop" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="copyHubLink()">📚 HUB LINK</button>
+      <button class="closeTop" onclick="newGameFlow()">NUOVA</button>
+    </div>
   </div>
   <div class="pill">Seleziona una partita o creane una nuova (nome unico).</div>
 
@@ -734,17 +740,14 @@ body.viewer #modalStats{display:block!important;}
     <div><div class="pill">Sono CASA / TRASFERTA</div>
       <select id="noiSel"><option value="Home" selected>CASA</option><option value="Away">TRASFERTA</option></select>
     </div>
-    <div class="muted2" style="font-size:13px;line-height:1.25;padding:10px 12px;border:1px solid #2e2e2e;border-radius:14px;background:#0f0f0f">
-      Tip: i nomi verranno mostrati nel tabellone e nel Live.
+    <div><div class="pill">Squadra CASA</div><input id="teamHomeName" type="text" placeholder="Nome squadra CASA"/></div>
   </div>
-</div>
-
-
   <div class="grid2" style="margin-top:10px">
-<div><div class="pill">Squadra CASA</div><input id="teamHomeName" type="text" placeholder="Nome squadra CASA"/></div>    
-<div><div class="pill">Squadra TRASFERTA</div><input id="teamAwayName" type="text" placeholder="Nome squadra TRASFERTA"/></div>
+    <div><div class="pill">Squadra TRASFERTA</div><input id="teamAwayName" type="text" placeholder="Nome squadra TRASFERTA"/></div>
+    <div class="muted2" style="font-size:11px;line-height:1.25;padding:10px 12px;border:1px solid #2e2e2e;border-radius:14px;background:#0f0f0f">
+      Tip: i nomi verranno mostrati nel tabellone e nel Live.
     </div>
-
+  </div>
   <div style="margin-top:10px">
     <div class="pill">Mia squadra: NUMERO + NOME</div>
     <div class="muted2" style="font-size:11px;margin-top:6px;line-height:1.25">Il numero accetta anche <b>0</b> e <b>00</b>.</div>
@@ -759,11 +762,11 @@ body.viewer #modalStats{display:block!important;}
 
   <div style="margin-top:10px">
     <div class="pill">📡 LIVE (Cloud) • condividi in tempo reale</div>
-      <div><input id="cloudIdInput" type="text" placeholder="ID partita (es. U15_vs_ABC_2026-01-14)"></div>
     <div class="grid2">
+      <div><input id="cloudIdInput" type="text" placeholder="ID partita (es. U15_vs_ABC_2026-01-14)"></div>
       <div><button class="btnW" style="background:#e0e0e0;color:#111" onclick="connectCloudFromSetup()">CONNETTI</button></div>
-<button class="btnW" onclick="copyLiveLink()">📡 LIVE LINK</button>
     </div>
+    <button class="btnW" style="margin-top:10px;background:#2b2b2b;color:#fff" onclick="copyLiveLink()">📡 LIVE LINK</button>
     <div class="muted2" style="font-size:11px;margin-top:8px;line-height:1.25">
       Dopo la connessione comparirà il tasto <b>📡 LIVE LINK</b> per copiare il link viewer.
     </div>
@@ -958,7 +961,7 @@ body.viewer #modalStats{display:block!important;}
 
 
   <div class="selectorTeam" id="statsTeam"></div>
-  <div class="pill pillCenter" id="statsHint"><------Seleziona un giocatore per vedere le statistiche personali------></div>
+  <div class="pill pillCenter" id="statsHint">Seleziona un giocatore per vedere le statistiche personali</div>
   <div class="selectorPlayers" id="statsPlayers"></div>
 <!-- TEMPO per quarto (solo giocatore) -->
 <div id="playerTimeWrap" class="hidden">
@@ -1296,15 +1299,191 @@ function renderHomeGames(){
           </div>
           <div class="ev-actions" style="flex-wrap:wrap;justify-content:flex-end">
             <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
+            <button class="b1" style="background:#10253a;color:#fff" onclick="copyLiveLinkForGame('${esc(g.id)}')">📡 LIVE LINK</button>
+            <button class="b1" style="background:#3b2a1a;color:#fff" onclick="toggleHubForGame('${esc(g.id)}')">⭐ HUB</button>
             <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
             <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
-      	    <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
           </div>
         </div>
       </div>
     `;
   }).join('');
 }
+
+async function copyLiveLinkForGame(gameId){
+  gameId = String(gameId||'').trim();
+  if(!gameId) return;
+
+  // Recupera lo stato salvato della partita (locale o cloud cache).
+  let cloudId = '';
+  try{
+    // Cloud cache (se loggato)
+    if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
+      const cg = CLOUD_GAMES_CACHE.find(x=>String(x.id)===String(gameId));
+      if(cg && cg.cloudId) cloudId = String(cg.cloudId||'');
+    }
+    // Locale
+    if(!cloudId){
+      const raw = localStorage.getItem('BSP_V7_GAME_' + gameId);
+      if(raw){
+        const d = JSON.parse(raw);
+        cloudId = String((d && d.cloudId) ? d.cloudId : '');
+      }
+    }
+  }catch(e){ cloudId=''; }
+
+  cloudId = String(cloudId||'').trim();
+  if(!cloudId){
+    cloudId = prompt('ID partita per LIVE (es. U15_vs_ABC_2026-01-14):', currentGameName() || '');
+    if(!cloudId) return;
+    cloudId = String(cloudId).trim();
+    // Salva l'ID nel salvataggio locale così resta disponibile anche a partita finita.
+    try{
+      const k = 'BSP_V7_GAME_' + gameId;
+      const raw = localStorage.getItem(k);
+      if(raw){
+        const d = JSON.parse(raw);
+        d.cloudId = cloudId;
+        localStorage.setItem(k, JSON.stringify(d));
+      }
+    }catch(e){}
+  }
+
+  const base = location.origin + location.pathname;
+  const url = `${base}?view=1&game=${encodeURIComponent(cloudId)}`;
+  try{ await navigator.clipboard.writeText(url); alert('Link copiato ✅\n\n'+url); }
+  catch(e){ prompt('Copia il link:', url); }
+}
+
+
+// ===== HUB PUBBLICO (solo view) =====
+// Crea un HUB pubblico (leggibile senza login) con le partite che selezioni.
+// Scrittura: solo da utente loggato (Google).
+
+function hubUserRef(){ return FB_DB.ref('users/'+AUTH_UID+'/hub'); }
+function hubRef(hubId){ return FB_DB.ref('hubs/'+String(hubId)); }
+function hubItemsRef(hubId){ return FB_DB.ref('hubs/'+String(hubId)+'/items'); }
+
+function baseDir(){
+  // directory corrente, utile su GitHub Pages
+  return location.origin + location.pathname.replace(/[^\/]*$/, '');
+}
+function makePublicHubUrl(hubId){
+  return baseDir() + 'hub.html?hub=' + encodeURIComponent(hubId);
+}
+
+async function ensureHubId(){
+  // 1) prova cache locale
+  let hubId = '';
+  try{ hubId = String(localStorage.getItem('BSP_HUB_ID')||'').trim(); }catch(e){}
+  if(hubId) return hubId;
+
+  if(!isAuthed()){
+    alert("Per creare/modificare l'HUB devi fare accesso Google. Il link che invii all'allenatore NON richiede login.");
+    await signIn();
+    if(!isAuthed()) throw new Error('auth required');
+  }
+
+  // 2) prova da cloud (per sincronizzare tra dispositivi)
+  try{
+    const snap = await hubUserRef().once('value');
+    const v = snap && snap.val ? snap.val() : null;
+    if(v && v.hubId){
+      hubId = String(v.hubId||'').trim();
+    }
+  }catch(e){}
+
+  // 3) se non esiste, crea
+  if(!hubId){
+    const rnd = Math.random().toString(36).slice(2,8);
+    const tail = Date.now().toString(36).slice(-4);
+    hubId = 'hub_' + rnd + tail;
+    try{
+      await hubUserRef().set({ hubId, updatedAt: Date.now() });
+      await hubRef(hubId).child('meta').set({ ownerUid: AUTH_UID, createdAt: Date.now() });
+    }catch(e){}
+  }
+
+  try{ localStorage.setItem('BSP_HUB_ID', hubId); }catch(e){}
+  return hubId;
+}
+
+async function copyHubLink(){
+  try{
+    const hubId = await ensureHubId();
+    const url = makePublicHubUrl(hubId);
+    try{ await navigator.clipboard.writeText(url); alert('Link HUB copiato ✅\n\n'+url); }
+    catch(e){ prompt('Copia il link HUB:', url); }
+  }catch(e){
+    console.warn(e);
+  }
+}
+
+async function toggleHubForGame(gameId){
+  gameId = String(gameId||'').trim();
+  if(!gameId) return;
+
+  // Serve cloudId (è quello usato nel viewer)
+  let cloudId = '';
+  let title = '';
+  try{
+    // nome partita dall'indice locale
+    const games = loadGamesIndex();
+    const g = games.find(x=>String(x.id)===String(gameId));
+    title = g ? String(g.name||'') : '';
+  }catch(e){}
+
+  try{
+    const raw = localStorage.getItem('BSP_V7_GAME_' + gameId);
+    if(raw){
+      const d = JSON.parse(raw);
+      cloudId = String((d && d.cloudId) ? d.cloudId : '');
+    }
+  }catch(e){}
+
+  cloudId = String(cloudId||'').trim();
+  if(!cloudId){
+    cloudId = prompt('ID partita per LIVE/VIEW (serve per creare il link viewer):', title || '');
+    if(!cloudId) return;
+    cloudId = String(cloudId).trim();
+    // salva anche nel game locale
+    try{
+      const k='BSP_V7_GAME_' + gameId;
+      const raw = localStorage.getItem(k);
+      if(raw){
+        const d = JSON.parse(raw);
+        d.cloudId = cloudId;
+        localStorage.setItem(k, JSON.stringify(d));
+      }
+    }catch(e){}
+  }
+
+  if(!isAuthed()){
+    alert('Per aggiungere/rimuovere dal HUB devi fare accesso Google.');
+    await signIn();
+    if(!isAuthed()) return;
+  }
+
+  const hubId = await ensureHubId();
+  const itemKey = encodeURIComponent(cloudId).replace(/%/g,'_');
+  const itemRef = hubItemsRef(hubId).child(itemKey);
+
+  try{
+    const snap = await itemRef.once('value');
+    const exists = snap && snap.exists && snap.exists();
+    if(exists){
+      await itemRef.remove();
+      alert('Rimosso dal HUB ✅');
+    }else{
+      await itemRef.set({ cloudId, title: title||cloudId, addedAt: Date.now(), by: AUTH_UID });
+      alert('Aggiunto al HUB ✅');
+    }
+  }catch(e){
+    console.warn(e);
+    alert('Errore HUB (controlla connessione o permessi Firebase).');
+  }
+}
+// ===== /HUB PUBBLICO =====
 
 function openGamesHome(){
   renderHomeGames();
@@ -1553,19 +1732,32 @@ const fmt=sec=>{ sec=Math.max(0,Math.floor(sec||0)); const m=Math.floor(sec/60),
 // Screen Wake Lock API (quando disponibile). Su iOS/Safari funziona solo dopo un'interazione utente.
 let wakeLock = null;
 let wakeLockWanted = false;
+let noSleep = null;
+let noSleepEnabled = false;
 
 async function enableWakeLock(){
   wakeLockWanted = true;
   try{
-    if(!('wakeLock' in navigator)) return;
-    if(document.visibilityState !== 'visible') return;
-    // evita richieste duplicate
-    if(wakeLock) return;
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+    // Prima scelta: Screen Wake Lock API (richiede contesto sicuro https/localhost)
+    if('wakeLock' in navigator){
+      if(document.visibilityState !== 'visible') return;
+      if(wakeLock) return; // evita richieste duplicate
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+      return;
+    }
+
+    // Fallback: NoSleep.js (funziona anche su file:// in molti casi, ma richiede gesto utente)
+    if(typeof NoSleep !== 'undefined'){
+      if(!noSleep) noSleep = new NoSleep();
+      if(!noSleepEnabled){
+        noSleep.enable();
+        noSleepEnabled = true;
+      }
+    }
   }catch(e){
-    // se fallisce (permessi/unsupported) non bloccare l'app
     wakeLock = null;
+    // se NoSleep fallisce non bloccare l'app
   }
 }
 
@@ -1573,6 +1765,13 @@ function disableWakeLock(){
   wakeLockWanted = false;
   try{ if(wakeLock){ wakeLock.release(); } }catch(e){}
   wakeLock = null;
+
+  try{
+    if(noSleep && noSleepEnabled){
+      noSleep.disable();
+      noSleepEnabled = false;
+    }
+  }catch(e){}
 }
 
 function isGameRunning(){
