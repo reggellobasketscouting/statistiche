@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Basket Scout Pro - v7</title>
+<title>Basket Scout Pro - v10</title>
 
 <!-- XLSX (excel) -->
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -65,6 +65,13 @@ body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:sys
 .bmid{position:absolute;left:50%;transform:translateX(-50%);bottom:7px;font-size:13px;font-weight:1000;color:var(--y)}
 .bf{position:absolute;right:8px;bottom:7px;font-size:13px;background:#ff4444;color:#fff;border-radius:999px;padding:2px 8px;font-weight:1000}
 
+.pfCard{
+  position:relative;padding:12px 8px 12px;background:#2a2a2a;border:2px solid #3a3a3a;border-radius:18px;
+  min-height:110px;text-align:center;font-weight:1000;color:#fff;display:flex;flex-direction:column;justify-content:flex-start
+}
+.pfCard .pname{min-height:26px}
+.pfCard input{margin-top:8px;border-radius:12px;border:1px solid #444;background:#0f0f0f;color:#fff;padding:8px 10px;font-weight:1000;text-align:center;font-size:16px}
+
 #azioni{display:none;margin-top:10px}
 .row-2-1{display:grid;grid-template-columns:2fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}
@@ -85,6 +92,7 @@ body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:sys
 .btnW.active-out{background:var(--r)!important;color:#fff!important;border:2px solid #fff}
 input,textarea,select{width:100%;border-radius:14px;border:1px solid #3a3a3a;background:#0f0f0f;color:#fff;padding:10px 12px;font-weight:800}
 textarea{min-height:110px;resize:vertical}
+
 
 .court{width:310px;height:240px;background:#d2a679;border:2px solid #fff;border-radius:12px;position:relative;overflow:hidden;margin:0 auto}
 .arc{position:absolute;top:-110px;left:20px;right:20px;height:270px;border:2px solid #fff;border-radius:0 0 160px 160px;pointer-events:none}
@@ -601,6 +609,7 @@ body.viewer #modalStats{display:block!important;}
       <div id="labelPeriodo">Q1</div>
       <div id="syncStatus">LOCALE</div>
       <button id="btnStato" onclick="togglePeriodo()">INIZIA Q1</button>
+      <button class="btn-mini" onclick="openManualEdit()">✍️ MODIFICA</button>
     </div>
     <div class="score-box">
       <h1 id="scoreAway">0</h1><div class="team-name" id="nameA">TRASFERTA</div>
@@ -665,7 +674,10 @@ body.viewer #modalStats{display:block!important;}
     </div>
 
     <div class="row-2">
+      <button class="btnA org" onclick="openManualEdit()">✍️ MODIFICA MANUALE</button>
       <button class="btnA gry" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
+    </div>
+    <div class="row-1">
       <button class="btnA blu" onclick="openStats()">📊 STAT LIVE</button>
     </div>
 
@@ -1021,6 +1033,98 @@ body.viewer #modalStats{display:block!important;}
   <div id="editForm"></div>
   <button class="btnW" style="background:var(--g);color:#fff" onclick="saveEdit()">SALVA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalEdit')">ANNULLA</button>
+</div></div>
+
+<!-- MANUAL EDIT -->
+<div id="modalManual" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">MODIFICA MANUALE</h3>
+    <button class="closeTop" onclick="closeModal('modalManual')">CHIUDI</button>
+  </div>
+  <div class="pill">Imposta lo stato di gara se inizi a partita già iniziata (punteggio, falli, periodo, timeout, quintetto).</div>
+
+  <div class="grid2">
+    <div>
+      <div class="pill">Punteggio CASA</div>
+      <input id="mScoreH" type="tel" inputmode="numeric" placeholder="0" />
+    </div>
+    <div>
+      <div class="pill">Punteggio TRASFERTA</div>
+      <input id="mScoreA" type="tel" inputmode="numeric" placeholder="0" />
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:10px">
+    <div>
+      <div class="pill">Falli di squadra CASA (nel periodo)</div>
+      <input id="mFoulH" type="tel" inputmode="numeric" placeholder="0" />
+    </div>
+    <div>
+      <div class="pill">Falli di squadra TRASFERTA (nel periodo)</div>
+      <input id="mFoulA" type="tel" inputmode="numeric" placeholder="0" />
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:10px">
+    <div>
+      <div class="pill">Timeout CASA (nel periodo)</div>
+      <input id="mToH" type="tel" inputmode="numeric" placeholder="0" />
+    </div>
+    <div>
+      <div class="pill">Timeout TRASFERTA (nel periodo)</div>
+      <input id="mToA" type="tel" inputmode="numeric" placeholder="0" />
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:10px">
+    <div>
+      <div class="pill">Periodo</div>
+      <select id="mPeriod">
+        <option value="1">Q1</option><option value="2">Q2</option><option value="3">Q3</option><option value="4">Q4</option>
+        <option value="5">OT1</option><option value="6">OT2</option><option value="7">OT3</option>
+      </select>
+    </div>
+    <div>
+      <div class="pill">Stato</div>
+      <select id="mStatus">
+        <option value="playing">IN CORSO</option>
+        <option value="idle">PAUSA (tra periodi)</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-top:10px">
+    <div class="pill">Tempo rimanente nel periodo (MSS) es: 835 = 8:35 (opzionale)</div>
+    <input id="mRem" type="tel" inputmode="numeric" maxlength="3" placeholder="" />
+  </div>
+
+  <div style="margin-top:10px">
+    <div class="pill">Quintetto attuale (opzionale ma consigliato se stato = IN CORSO)</div>
+    <div id="mLineupLabel" class="muted2" style="font-size:12px;line-height:1.25">Non impostato</div>
+    <button class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="openManualChoose5()">SCEGLI 5</button>
+  </div>
+
+
+
+  <div style="margin-top:10px">
+    <div class="pill">Falli personali CASA (per giocatore)</div>
+    <div id="mPfMyGrid" class="grid-players"></div>
+  </div>
+
+  <div style="margin-top:10px">
+    <div class="pill">Falli personali TRASFERTA (per giocatore)</div>
+    <div id="mPfOppGrid" class="grid-players"></div>
+  </div>
+
+  <div class="hr"></div>
+
+  <label style="display:flex;gap:10px;align-items:center;font-weight:900;font-size:12px">
+    <input id="mAsFirst" type="checkbox" />
+    Inserisci come <b>primo evento</b> (consigliato se inizi a registrare da metà partita)
+  </label>
+
+  <button class="btnW" style="background:var(--g);color:#fff" onclick="applyManualEdit()">APPLICA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalManual')">ANNULLA</button>
 </div></div>
 
 <script>
@@ -2179,6 +2283,56 @@ function replay(){
         }
         break;
       }
+
+      case 'manual_set':{
+        // Impostazione manuale (baseline) per iniziare a partita in corso
+        const nQ = Number(p.nQ) || base.nQ;
+        base.nQ = nQ;
+        const st = (p.status==='playing' || p.status==='idle' || p.status==='ended') ? p.status : base.status;
+        base.status = st;
+
+        // punteggio / falli / timeout / tecnici panchina
+        base.sH = Math.max(0, Number(p.sH) || 0);
+        base.sA = Math.max(0, Number(p.sA) || 0);
+        base.fH = Math.max(0, Number(p.fH) || 0);
+        base.fA = Math.max(0, Number(p.fA) || 0);
+        base.toH = Math.max(0, Number(p.toH) || 0);
+        base.toA = Math.max(0, Number(p.toA) || 0);
+        base.tH = Math.max(0, Number(p.tH) || 0);
+        base.tA = Math.max(0, Number(p.tA) || 0);
+
+
+
+        // falli personali (baseline)
+        if(p.pfMy && typeof p.pfMy==='object'){
+          for(const k in p.pfMy){
+            const num = String(k);
+            if(base.p[num]) base.p[num].fouls = Math.max(0, Number(p.pfMy[k])||0);
+          }
+        }
+        if(p.pfOpp && typeof p.pfOpp==='object'){
+          for(const k in p.pfOpp){
+            const num = String(k);
+            if(base.opp[num]) base.opp[num].fouls = Math.max(0, Number(p.pfOpp[k])||0);
+          }
+        }
+
+        // lineup (opzionale) + stints (opzionale)
+        const lineup = (Array.isArray(p.lineup) ? p.lineup : []).map(String).slice(0,5);
+        if(lineup.length===5){
+          base.inC = lineup;
+          // se gioco in corso, creo stints "aperti" con tempo rimanente
+          if(base.status==='playing'){
+            const rem = Number(p.remSec);
+            const remOk = Number.isFinite(rem) ? Math.max(0, rem) : periodLenSecFor(base.nQ);
+            for(const pl of base.inC){
+              base.stints.push({player:pl,q:base.nQ,inRem:remOk,outRem:null});
+            }
+          }
+        }
+        // stints: in JS non posso usare 'for ... :', patch below
+        break;
+      }
       case 'end_period':{
         const q=Number(p.nQ)||base.nQ;
         for(const pl of base.inC) closeOpenStint(pl,q,0);
@@ -3182,6 +3336,187 @@ if(timeWrap && ptsWrap){
 
 }
 function openStats(){ statsSel='ALL'; renderStats(); openModal('modalStats'); }
+
+/* ===================== MANUAL EDIT (baseline) ===================== */
+let __manualLineup = null; // array di 5 numeri (string)
+
+function _mssToSec(txt){
+  const s = String(txt||'').trim();
+  if(!s) return null;
+  const digits = s.replace(/\D/g,'');
+  if(!digits) return null;
+  // formato MSS (es. 835 = 8:35). accetta anche 0..999
+  const n = parseInt(digits,10);
+  if(!Number.isFinite(n)) return null;
+  const m = Math.floor(n/100);
+  const ss = n % 100;
+  if(ss>=60) return null;
+  return (m*60)+ss;
+}
+
+function _readInt(id, defVal){
+  const el = document.getElementById(id);
+  const v = el ? parseInt(String(el.value||'').trim(),10) : NaN;
+  return Number.isFinite(v) ? v : (defVal||0);
+}
+
+function _pfId(prefix, num){
+  return prefix + String(num).replace(/[^0-9]/g,'');
+}
+
+function renderManualPersonalFouls(){
+  const myGrid = document.getElementById('mPfMyGrid');
+  const oppGrid = document.getElementById('mPfOppGrid');
+  if(!myGrid || !oppGrid) return;
+
+  // CASA
+  myGrid.innerHTML='';
+  (S.myRoster||[]).forEach(pl=>{
+    const n = String(pl.num);
+    const name = pl.name || '';
+    const id = _pfId('mPfMy_', n);
+    const fouls = ((S.p && S.p[n] && S.p[n].fouls)!=null ? S.p[n].fouls : 0);
+    const card = document.createElement('div');
+    card.className='pfCard';
+    card.innerHTML = `
+      <div class="pname">${esc(name)}</div>
+      <div class="pnum">${esc(n)}</div>
+      <input id="${id}" type="tel" inputmode="numeric" maxlength="1" placeholder="0" value="${esc(String(fouls||0))}" />
+    `;
+    myGrid.appendChild(card);
+  });
+
+  // TRASFERTA (solo numeri)
+  oppGrid.innerHTML='';
+  (S.oppRoster||[]).forEach(n0=>{
+    const n = String(n0);
+    const id = _pfId('mPfOpp_', n);
+    const fouls = ((S.opp && S.opp[n] && S.opp[n].fouls)!=null ? S.opp[n].fouls : 0);
+    const card = document.createElement('div');
+    card.className='pfCard';
+    card.innerHTML = `
+      <div class="pname">&nbsp;</div>
+      <div class="pnum">${esc(n)}</div>
+      <input id="${id}" type="tel" inputmode="numeric" maxlength="1" placeholder="0" value="${esc(String(fouls||0))}" />
+    `;
+    oppGrid.appendChild(card);
+  });
+}
+
+function _collectPf(prefix, nums){
+  const out = {};
+  (nums||[]).forEach(n0=>{
+    const n = String(n0);
+    const id = _pfId(prefix, n);
+    const el = document.getElementById(id);
+    if(!el) return;
+    const v = parseInt(String(el.value||'0').trim(),10);
+    const f = Number.isFinite(v) ? Math.max(0, v) : 0;
+    out[n] = f;
+  });
+  return out;
+}
+
+function openManualEdit(){
+  try{
+    if(IS_VIEWER){
+      alert("Sei in modalita sola lettura (view=1). Apri la pagina senza ?view=1 per poter modificare.");
+      return;
+    }
+  // prefill
+  const ended = (S.status==='ended');
+  document.getElementById('mScoreH').value = S.sH||0;
+  document.getElementById('mScoreA').value = S.sA||0;
+  document.getElementById('mFoulH').value = S.fH||0;
+  document.getElementById('mFoulA').value = S.fA||0;
+  document.getElementById('mToH').value = S.toH||0;
+  document.getElementById('mToA').value = S.toA||0;
+  document.getElementById('mPeriod').value = S.nQ||1;
+  document.getElementById('mStatus').value = ended ? 'ended' : (S.status==='playing' ? 'playing' : 'idle');
+  document.getElementById('mRem').value = '';
+
+  __manualLineup = null;
+  document.getElementById('mLineupLabel').textContent = 'Non impostato';
+
+  // default: se non ho eventi, metti come primo
+  const cb = document.getElementById('mAsFirst');
+  if(cb) cb.checked = !(S.events && S.events.length);
+
+  renderManualPersonalFouls();
+  openModal('modalManual');
+
+  }catch(e){
+    alert('Errore in MODIFICA MANUALE: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function openManualChoose5(){
+  pickManualLineup();
+}
+
+function pickManualLineup(){
+  const s = prompt('Inserisci i 5 numeri del quintetto separati da virgola (es: 4,7,10,12,15):');
+  if(s===null) return;
+  const nums = String(s).split(/[^0-9]+/).map(x=>x.trim()).filter(Boolean).map(x=>String(parseInt(x,10)));
+  const uniq=[]; const seen=new Set();
+  for(const n of nums){ if(!seen.has(n)){ seen.add(n); uniq.push(n); } }
+  if(uniq.length!==5){ alert('Devi inserire esattamente 5 numeri.'); return; }
+  // verifica che siano nel mio roster
+  const rosterSet = new Set((S.myRoster||[]).map(p=>String(p.num)));
+  for(const n of uniq){
+    if(!rosterSet.has(n)){
+      alert('Numero '+n+' non presente nel roster.');
+      return;
+    }
+  }
+  __manualLineup = uniq;
+  document.getElementById('mLineupLabel').textContent = uniq.join(', ');
+}
+
+function applyManualEdit(){
+  try{
+    if(IS_VIEWER){
+      alert("Modalita sola lettura (view=1): non posso salvare modifiche.");
+      return;
+    }
+  const payload = {
+    sH: Math.max(0, _readInt('mScoreH',0)),
+    sA: Math.max(0, _readInt('mScoreA',0)),
+    fH: Math.max(0, _readInt('mFoulH',0)),
+    fA: Math.max(0, _readInt('mFoulA',0)),
+    toH: Math.max(0, _readInt('mToH',0)),
+    toA: Math.max(0, _readInt('mToA',0)),
+    nQ: Math.max(1, _readInt('mPeriod',1)),
+    status: (document.getElementById('mStatus').value||'idle')
+  };
+
+  const remSec = _mssToSec(document.getElementById('mRem').value);
+  if(remSec!==null) payload.remSec = remSec;
+  if(__manualLineup && __manualLineup.length===5) payload.lineup = __manualLineup.slice(0,5);
+
+  // falli personali (baseline)
+  payload.pfMy = _collectPf('mPfMy_', (S.myRoster||[]).map(p=>p.num));
+  payload.pfOpp = _collectPf('mPfOpp_', (S.oppRoster||[]));
+
+  const ev = { id: uid(), ts: Date.now(), type:'manual_set', payload };
+
+  const _asFirst = document.getElementById('mAsFirst');
+  const first = !!(_asFirst && _asFirst.checked);
+  if(first) S.events.unshift(ev);
+  else S.events.push(ev);
+
+  replay();
+  renderRoster();
+  updateUI();
+  setBtnState();
+  autosave();
+
+  closeModal('modalManual');
+  }catch(e){
+    alert('Errore in MODIFICA MANUALE: ' + (e && e.message ? e.message : e));
+  }
+}
+
 
 /* ===================== EVENTS LIST + FILTERS + EDIT ===================== */
 const EV_FILTERS=[
