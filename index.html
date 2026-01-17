@@ -428,6 +428,42 @@ body.viewer #modalStats .closeTop{display:none!important;}
 .grid5 .kpi:first-child .t{font-size:11px !important;}
 .grid5 .kpi:first-child .v{font-size:18px !important;}
 
+  /* ===================== TABLET LANDSCAPE (azioni sempre visibili) ===================== */
+body.tablet .wrap{
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 14px;
+  align-items: start;
+}
+
+/* colonna sinistra: tabellone + barra avversari + azioni */
+body.tablet .scoreboard,
+body.tablet .opp-points-bar,
+body.tablet #azioni{
+  grid-column: 1 / 2;
+}
+
+/* colonna destra: roster (più largo) */
+body.tablet #rosterGrid{
+  grid-column: 2 / 3;
+  display: grid;                 /* override: da flex a griglia */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* su tablet l’overlay non serve */
+body.tablet #actionScreen{
+  display: none !important;
+}
+
+/* bottoni azioni più “tablet-friendly” */
+body.tablet .btnA{
+  min-height: 90px;
+  font-size: 22px;
+}
+
+
 </style>
 
 <style id="statsLiveLayout">
@@ -1893,12 +1929,22 @@ function getPlayerLabel(num){
 
 function openActionScreen(num){
   if(IS_VIEWER) return;
+
+  // ✅ Tablet: NON aprire overlay fullscreen, lasciamo solo #azioni
+  if(document.body.classList.contains('tablet')){
+    // aggiorno comunque l’etichetta (opzionale)
+    const lab = document.getElementById('actionPlayerLabel');
+    if(lab) lab.textContent = getPlayerLabel(num);
+    return;
+  }
+
   const el=document.getElementById('actionScreen');
   if(!el) return;
   document.getElementById('actionPlayerLabel').textContent = getPlayerLabel(num);
   el.classList.remove('hidden');
   document.body.classList.add('noScroll');
 }
+
 
 let __DESEL_AFTER_MODAL = false;
 
@@ -3762,6 +3808,19 @@ document.addEventListener('DOMContentLoaded',()=>{
         const t=(b.textContent||'').toUpperCase();
         const allow = t.includes('STAT') || t.includes('CHECK') || t.includes('EVENTI');
         if(!allow){ b.disabled=true; b.style.opacity='0.35'; }
+
+        function applyDeviceLayout(){
+  // tablet-like + landscape (soglia pratica)
+  const landscape = window.matchMedia("(orientation: landscape)").matches;
+  const tabletLike = Math.max(window.innerWidth, window.innerHeight) >= 900;
+
+  // In viewer NON serve cambiare layout (rimane “pulito”)
+  document.body.classList.toggle("tablet", tabletLike && landscape && !IS_VIEWER);
+}
+
+window.addEventListener("resize", applyDeviceLayout);
+window.addEventListener("orientationchange", applyDeviceLayout);
+applyDeviceLayout();
       });
 
       // disabilita selezione giocatori e schermata azioni
@@ -3857,6 +3916,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
 });
+
+  
 </script>
 </body>
 </html>
