@@ -12,10 +12,12 @@
     .sub{margin-top:6px;color:var(--mut);font-size:12px;line-height:1.3}
     .wrap{padding:14px}
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
-    .title{font-weight:800;margin:0 0 6px;font-size:15px}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;text-align:center}
+    .teams{font-weight:900;font-size:16px;color:#ffd400;letter-spacing:.2px}
+    .score{font-weight:900;font-size:28px;margin-top:6px;margin-bottom:10px;color:var(--txt)}
+    .title{font-weight:800;margin:0 0 6px;font-size:13px;color:var(--mut)}
     .meta{color:var(--mut);font-size:12px;margin:0 0 10px;line-height:1.25}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
     a.btn,button{appearance:none;border:1px solid var(--bd);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;text-decoration:none}
     a.btn{background:var(--btn);color:var(--btnTxt)}
     button{background:#1e1e1e;color:var(--txt)}
@@ -99,10 +101,19 @@
     list.innerHTML = arr.map(it=>{
       const cloudId = String(it.cloudId||'').trim();
       const title = it.title || cloudId || 'Partita';
+      // Proviamo a mostrare nomi squadre + risultato se disponibili
+      const home = (it.homeName || it.teamHome || it.home || it.H || it.casa || '').toString().trim();
+      const away = (it.awayName || it.teamAway || it.away || it.A || it.trasferta || '').toString().trim();
+      const sh = (it.scoreHome ?? it.scoreH ?? it.homeScore ?? it.puntiCasa ?? it.ptH);
+      const sa = (it.scoreAway ?? it.scoreA ?? it.awayScore ?? it.puntiTrasferta ?? it.ptA);
+      const teamsLine = (home || away) ? ((home||'CASA') + '  vs  ' + (away||'TRASFERTA')) : '';
+      const hasScore = (sh !== undefined && sh !== null && sa !== undefined && sa !== null && String(sh) !== '' && String(sa) !== '');
       const when = formatWhen(it.addedAt);
       const url = viewerUrl(cloudId);
       return `
         <div class="card">
+          ${teamsLine ? `<div class="teams">${esc(teamsLine)}</div>` : ''}
+          ${hasScore ? `<div class="score">${esc(sh)} - ${esc(sa)}</div>` : ''}
           <div class="title">${esc(title)}</div>
           <div class="meta">${cloudId?('ID: '+esc(cloudId)+'<br/>'):''}${when?('Aggiunta: '+esc(when)) : ''}</div>
           <div class="row">
