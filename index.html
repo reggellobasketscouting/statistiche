@@ -759,9 +759,10 @@ body.viewer #modalStats{display:block!important;}
 
   <div style="margin-top:10px">
     <div class="pill">📡 LIVE (Cloud) • condividi in tempo reale</div>
-    <div class="grid2">
       <div><input id="cloudIdInput" type="text" placeholder="ID partita (es. U15_vs_ABC_2026-01-14)"></div>
+    <div class="grid2">
       <div><button class="btnW" style="background:#e0e0e0;color:#111" onclick="connectCloudFromSetup()">CONNETTI</button></div>
+<button class="btnW" onclick="copyLiveLink()">📡 LIVE LINK</button>
     </div>
     <div class="muted2" style="font-size:11px;margin-top:8px;line-height:1.25">
       Dopo la connessione comparirà il tasto <b>📡 LIVE LINK</b> per copiare il link viewer.
@@ -1297,6 +1298,7 @@ function renderHomeGames(){
             <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
             <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
             <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
+      	    <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
           </div>
         </div>
       </div>
