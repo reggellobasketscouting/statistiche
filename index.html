@@ -734,14 +734,13 @@ body.viewer #modalStats{display:block!important;}
     <div><div class="pill">Sono CASA / TRASFERTA</div>
       <select id="noiSel"><option value="Home" selected>CASA</option><option value="Away">TRASFERTA</option></select>
     </div>
-    <div class="muted2" style="font-size:11px;line-height:1.25;padding:10px 12px;border:1px solid #2e2e2e;border-radius:14px;background:#0f0f0f">
-      Tip: i nomi verranno mostrati nel tabellone e nel Live.    </div>
-    </div>
-
-  <div class="grid2" style="margin-top:10px">
     <div><div class="pill">Squadra CASA</div><input id="teamHomeName" type="text" placeholder="Nome squadra CASA"/></div>
+  </div>
+  <div class="grid2" style="margin-top:10px">
     <div><div class="pill">Squadra TRASFERTA</div><input id="teamAwayName" type="text" placeholder="Nome squadra TRASFERTA"/></div>
-
+    <div class="muted2" style="font-size:11px;line-height:1.25;padding:10px 12px;border:1px solid #2e2e2e;border-radius:14px;background:#0f0f0f">
+      Tip: i nomi verranno mostrati nel tabellone e nel Live.
+    </div>
   </div>
   <div style="margin-top:10px">
     <div class="pill">Mia squadra: NUMERO + NOME</div>
@@ -1513,6 +1512,7 @@ async function openGameById(id){
 
 const S = {
   status:'idle', nQ:1,
+  cloudId:'',
   quarterLenMin:10, otLenMin:5,
   noi:'Home', nameH:'CASA', nameA:'TRASFERTA',
   sH:0,sA:0, fH:0,fA:0, toH:0,toA:0,
@@ -1948,9 +1948,10 @@ function fillSetupUI(){
   if($('oppTeamInput')) $('oppTeamInput').value = (S.oppRoster||[]).map(String).join('\n');
 
   var cloudInp = $('cloudIdInput');
-  if(cloudInp && !String(cloudInp.value||'').trim()){
-    var n = currentGameName();
-    if(n) cloudInp.value = n;
+  if(cloudInp){
+    var desired = String(S.cloudId||'').trim();
+    if(!desired){ desired = String(currentGameName()||'').trim(); }
+    if(desired){ cloudInp.value = desired; }
   }
 }
 
@@ -1958,6 +1959,8 @@ function connectCloudFromSetup(){
   const inp = document.getElementById('cloudIdInput');
   const id = (inp ? inp.value : '').trim();
   if(!id){ alert('Inserisci un ID partita'); return; }
+  S.cloudId = id;
+  try{ autosave(); }catch(e){}
   connectToCloud(id);
   try{ localStorage.setItem('BSP_CLOUD_GAME_ID', id); }catch(e){}
   alert('Cloud connesso ✅\nOra puoi usare 📡 LIVE LINK');
@@ -4143,6 +4146,7 @@ function serializeState(){
   return {
     version:7,
     status:S.status,nQ:S.nQ,
+    cloudId:S.cloudId,
     quarterLenMin:S.quarterLenMin,otLenMin:S.otLenMin,
     noi:S.noi,nameH:S.nameH,nameA:S.nameA,
     myRoster:S.myRoster, oppRoster:S.oppRoster,
@@ -4161,6 +4165,7 @@ function loadAutosave(){
     S.otLenMin=d.otLenMin||5;
     S.noi=d.noi||'Home';
     S.nameH=d.nameH||'CASA'; S.nameA=d.nameA||'TRASFERTA';
+    S.cloudId=d.cloudId||'';
     S.myRoster=d.myRoster||S.myRoster;
     S.oppRoster=d.oppRoster||S.oppRoster;
     S.events=d.events||[];
@@ -4237,9 +4242,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildMyTeamRowsFromRoster(S.myRoster||[]);
   if($('oppTeamInput')) $('oppTeamInput').value=(S.oppRoster||[]).join('\n');
   var cloudInp = $('cloudIdInput');
-  if(cloudInp && !String(cloudInp.value||'').trim()){
-    var n=currentGameName();
-    if(n) cloudInp.value=n;
+  if(cloudInp){
+    var desired = String(S.cloudId||'').trim();
+    if(!desired){ desired = String(currentGameName()||'').trim(); }
+    if(desired){ cloudInp.value = desired; }
   }
 
   setupCourt();
@@ -4247,16 +4253,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   setBtnState();
   updateUI();
 
-  // Scout mode: ri-connessione cloud se già impostata
+  // Scout mode: ri-connessione cloud se già impostata (per-partita)
   if(!IS_VIEWER){
     try{
-      const saved = localStorage.getItem('BSP_CLOUD_GAME_ID');
-      if(saved && !CLOUD_GAME_ID){
-        CLOUD_GAME_ID = saved;
-      }
+      if(S.cloudId && !CLOUD_GAME_ID){ CLOUD_GAME_ID = String(S.cloudId); }
       if(CLOUD_GAME_ID){
-        const inp = document.getElementById('cloudIdInput');
-        if(inp) inp.value = CLOUD_GAME_ID;
         connectToCloud(CLOUD_GAME_ID);
       }
     }catch(e){}
