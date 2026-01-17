@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Hub Partite</title>
+  <style>
+    :root{--bg:#0b0b0b;--card:#121212;--txt:#eaeaea;--mut:#a0a0a0;--bd:#2a2a2a;--btn:#e0e0e0;--btnTxt:#111}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--txt)}
+    header{padding:16px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:rgba(11,11,11,.92);backdrop-filter:blur(8px)}
+    h1{margin:0;font-size:18px}
+    .sub{margin-top:6px;color:var(--mut);font-size:12px;line-height:1.3}
+    .wrap{padding:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+    .title{font-weight:800;margin:0 0 6px;font-size:15px}
+    .meta{color:var(--mut);font-size:12px;margin:0 0 10px;line-height:1.25}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    a.btn,button{appearance:none;border:1px solid var(--bd);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;text-decoration:none}
+    a.btn{background:var(--btn);color:var(--btnTxt)}
+    button{background:#1e1e1e;color:var(--txt)}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--bd);border-radius:999px;padding:6px 10px;color:var(--mut);font-size:12px;margin-top:10px}
+    .err{color:#ff8a80}
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <header>
+    <h1>📊 Hub Partite</h1>
+    <div class="sub" id="subtitle">Caricamento…</div>
+    <div class="pill" id="hubPill" style="display:none"></div>
+  </header>
+
+  <div class="wrap">
+    <div id="status" class="meta"></div>
+    <div id="list" class="grid"></div>
+  </div>
+
+<script>
+  // --- config Firebase: uguale a quello della tua app ---
+  const firebaseConfig = window.__FIREBASE_CONFIG__ || {
+    apiKey: "",
+    authDomain: "basket-reggello-scout.firebaseapp.com",
+    databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "basket-reggello-scout",
+    storageBucket: "basket-reggello-scout.firebasestorage.app",
+    messagingSenderId: "",
+    appId: ""
+  };
+
+  function qs(name){
+    const u=new URL(location.href);
+    return u.searchParams.get(name) || '';
+  }
+
+  function baseDir(){
+    return location.origin + location.pathname.replace(/[^\/]*$/, '');
+  }
+
+  function viewerUrl(cloudId){
+    // Assumiamo che l'app principale sia index.html nella stessa cartella
+    return baseDir() + 'index.html?view=1&game=' + encodeURIComponent(cloudId);
+  }
+
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g, m=>({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  }
+
+  function formatWhen(ts){
+    try{
+      if(!ts) return '';
+      const d=new Date(ts);
+      return d.toLocaleString();
+    }catch(e){return ''}
+  }
+
+  function render(items){
+    const list=document.getElementById('list');
+    const status=document.getElementById('status');
+
+    const arr=Object.values(items||{});
+    arr.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+
+    if(!arr.length){
+      list.innerHTML = `
+        <div class="card">
+          <div class="title">Nessuna partita nel HUB</div>
+          <div class="meta">Chi gestisce le statistiche può aggiungere partite dal pulsante ⭐ HUB nella schermata “PARTITE SALVATE”.</div>
+        </div>`;
+      status.textContent='';
+      return;
+    }
+
+    status.textContent = `Partite: ${arr.length}`;
+
+    list.innerHTML = arr.map(it=>{
+      const cloudId = String(it.cloudId||'').trim();
+      const title = it.title || cloudId || 'Partita';
+      const when = formatWhen(it.addedAt);
+      const url = viewerUrl(cloudId);
+      return `
+        <div class="card">
+          <div class="title">${esc(title)}</div>
+          <div class="meta">${cloudId?('ID: '+esc(cloudId)+'<br/>'):''}${when?('Aggiunta: '+esc(when)) : ''}</div>
+          <div class="row">
+            <a class="btn" href="${url}" target="_blank" rel="noopener">Apri statistiche</a>
+            <button onclick="copyLink('${encodeURIComponent(url)}')">Copia link</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function copyLink(enc){
+    const url = decodeURIComponent(enc);
+    try{ await navigator.clipboard.writeText(url); alert('Link copiato ✅'); }
+    catch(e){ prompt('Copia il link:', url); }
+  }
+
+  (function boot(){
+    const hubId = String(qs('hub')||'').trim();
+    const sub = document.getElementById('subtitle');
+    const pill = document.getElementById('hubPill');
+
+    if(!hubId){
+      sub.innerHTML = '<span class="err">Manca il parametro hub.</span> Usa un link tipo: <b>hub.html?hub=...</b>';
+      return;
+    }
+
+    // init firebase
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    }catch(e){}
+
+    const db = firebase.database();
+    const ref = db.ref('hubs/'+hubId+'/items');
+
+    sub.textContent = 'Raccolta partite (sola visualizzazione).';
+    pill.style.display='inline-flex';
+    pill.textContent = 'HUB: '+hubId;
+
+    ref.on('value', snap=>{
+      const v = snap && snap.val ? snap.val() : null;
+      render(v||{});
+    }, err=>{
+      console.warn(err);
+      sub.innerHTML = '<span class="err">Errore lettura HUB.</span> (Permessi Firebase o connessione)';
+    });
+  })();
+</script>
+</body>
+</html>
