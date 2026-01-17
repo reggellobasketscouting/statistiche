@@ -426,6 +426,7 @@ body.viewer #modalStats .closeTop{display:none!important;}
 .grid5 .kpi .v{font-size:13px !important;}
 .grid5 .kpi:first-child .t{font-size:11px !important;}
 .grid5 .kpi:first-child .v{font-size:18px !important;}
+
 </style>
 
 <style id="statsLiveLayout">
@@ -444,12 +445,17 @@ body.viewer #modalStats .closeTop{display:none!important;}
 
 /* ===== Selector layout ===== */
 .selectorTeam{display:flex;justify-content:center;margin:8px 0 8px;}
-.selectorPlayers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px;}
+.selectorPlayers{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 0 12px;padding:0 18px 6px;-webkit-overflow-scrolling:touch;}
+/* Fade ai bordi per indicare scroll (sinistra+destra) */
+.selectorPlayers{
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+}
 .pillCenter{display:block;width:100%;text-align:center;margin:0 auto 10px;}
 
 /* ===== Player button layout ===== */
 /* Pulsante giocatore (STAT LIVE) */
-.selbtn.selPlayer{
+.selbtn.selPlayer{scroll-snap-align:start;flex:0 0 30%;max-width:30%;height:96px;
   position:relative;
   min-height:112px;
   padding:10px 10px 18px;
@@ -486,16 +492,8 @@ body.viewer #modalStats .closeTop{display:none!important;}
   line-height:1;
 }
 
-/* RIGA BASSA: falli (sx), speciali (centro), punti (dx) */
-.spBottom{
-  position:absolute;
-  left:8px;
-  right:8px;
-  bottom:8px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
+/* RIGA BASSA rimossa in STAT LIVE */
+.spBottom{display:none;}
 
 /* BASSO SINISTRA: box rosso con numero falli */
 .spFoulBox{
@@ -531,8 +529,8 @@ body.viewer #modalStats .closeTop{display:none!important;}
 
 /* Un po' piu grandi su schermi piccoli */
 @media (max-width:420px){
-  .selectorPlayers{grid-template-columns:repeat(2,1fr);}
-  .selbtn.selPlayer{min-height:118px;}
+  .selectorPlayers{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 0 12px;padding:0 14px 6px;-webkit-overflow-scrolling:touch;}
+  .selbtn.selPlayer{flex:0 0 30%;max-width:30%;height:96px;min-height:118px;}
   .spNum{font-size:28px;}
 }
 /* ===== Viewer pulito ===== */
