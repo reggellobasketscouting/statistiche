@@ -992,6 +992,11 @@ body.viewer #modalStats{display:block!important;}
   </div>
 </div>
 
+<!-- PLUS/MINUS (solo giocatore) -->
+<div id="kpmWrap" class="hidden" style="margin-top:10px">
+  <div class="kpi kpiY"><div class="t">PLUS/MINUS</div><div class="v" id="kpm">0</div></div>
+</div>
+
   <div class="grid3">
     <div class="kpi"><div class="t">TIRI DA 2</div><div class="v" id="k2">0/0</div><div class="s" id="k2p">0,00%</div></div>
     <div class="kpi"><div class="t">TIRI DA 3</div><div class="v" id="k3">0/0</div><div class="s" id="k3p">0,00%</div></div>
@@ -2393,6 +2398,7 @@ function replay(){
   // init from current rosters
   S.myRoster.forEach(pl=>{
     base.p[pl.num]={
+      pm:0,
       pts:0,fouls:0,
       twoM:0,twoA:0, threeM:0,threeA:0, ftM:0,ftA:0,
       foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,
@@ -2409,6 +2415,16 @@ function replay(){
   const incTeamFoulOpp=()=>{ if(myIsHome) base.fA++; else base.fH++; };
   const addScoreMy=v=>{ if(myIsHome) base.sH+=v; else base.sA+=v; };
   const addScoreOpp=v=>{ if(myIsHome) base.sA+=v; else base.sH+=v; };
+
+  // PLUS/MINUS: aggiorna tutti i giocatori attualmente in campo
+  const addPMMy=(v)=>{
+    const val=Number(v)||0;
+    for(const pl of base.inC){ if(base.p[pl]) base.p[pl].pm += val; }
+  };
+  const addPMOpp=(v)=>{
+    const val=Number(v)||0;
+    for(const pl of base.inC){ if(base.p[pl]) base.p[pl].pm -= val; }
+  };
   const timeoutLimitFor=nQ=> (nQ<=2)?2:(nQ<=4?3:1);
   const periodLenSecFor=nQ=> ((nQ<=4?S.quarterLenMin:S.otLenMin)*60);
 
@@ -2519,7 +2535,12 @@ function replay(){
         }
         break;
       }
-      case 'opp_point': addScoreOpp(Number(p.value)||0); break;
+      case 'opp_point':{
+        const v = Number(p.value)||0;
+        addScoreOpp(v);
+        addPMOpp(v);
+        break;
+      }
       case 'timeout':{
         const lim=timeoutLimitFor(base.nQ);
         if(p.team==='Home') base.toH=Math.min(base.toH+1,lim);
@@ -2555,13 +2576,13 @@ function replay(){
         if(val===2){ base.p[pl].twoA++; if(made) base.p[pl].twoM++; }
         else { base.p[pl].threeA++; if(made) base.p[pl].threeM++; }
         base.shots.push({player:pl,val,made,x:Number(p.x),y:Number(p.y)});
-        if(made){ base.p[pl].pts+=val; addScoreMy(val); }
+        if(made){ base.p[pl].pts+=val; addScoreMy(val); addPMMy(val); }
         break;
       }
       case 'ft':{
         const pl=String(p.player||''); if(!base.p[pl]) break;
         const made=!!p.made;
-        base.p[pl].ftA++; if(made){ base.p[pl].ftM++; base.p[pl].pts++; addScoreMy(1); }
+        base.p[pl].ftA++; if(made){ base.p[pl].ftM++; base.p[pl].pts++; addScoreMy(1); addPMMy(1); }
         break;
       }
       case 'sub':{
@@ -3424,6 +3445,7 @@ if(otWrap){
 const isTeam = (statsSel === 'ALL');
 const timeWrap = $('playerTimeWrap');
 const ptsWrap  = $('playerPtsWrap');
+const pmWrap   = $('kpmWrap');
 if(timeWrap && ptsWrap){
   if(isTeam){
     timeWrap.classList.add('hidden');
@@ -3479,6 +3501,18 @@ if(timeWrap && ptsWrap){
         pOtWrap.classList.add('hidden');
       }
     }
+  }
+}
+
+// PLUS/MINUS: mostra solo se e' selezionato un giocatore
+if(pmWrap){
+  if(isTeam){
+    pmWrap.classList.add('hidden');
+  }else{
+    pmWrap.classList.remove('hidden');
+    const p = S.p[String(statsSel)] || {};
+    const pm = Number(p.pm)||0;
+    $('kpm').textContent = (pm>0?'+':'') + String(pm);
   }
 }
 
