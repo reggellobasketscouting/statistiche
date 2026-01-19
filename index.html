@@ -2478,6 +2478,8 @@ function actionShot(){
 }
 /* ===================== PERIOD FLOW ===================== */
 function togglePeriodo(){
+  // debug/safety: mark that click arrived
+  try{ const ss=document.getElementById('syncStatus'); if(ss) ss.textContent='...'; }catch(e){}
   if(S.status==='ended') return;
 
   // Harden: ensure derived stats exist before building the 5-player picker
@@ -2489,6 +2491,7 @@ function togglePeriodo(){
     // If roster isn't ready, don't proceed (prevents silent failures)
     if(!Array.isArray(S.myRoster) || S.myRoster.length===0){
       alert('Roster non impostato: apri SETUP PARTITA e inserisci i giocatori.');
+      try{ setSyncLabel('Roster mancante'); }catch(e){}
       return;
     }
 
@@ -2498,7 +2501,7 @@ function togglePeriodo(){
       openModal('modalChoose5');
     }catch(e){
       console.error('Errore INIZIA PERIODO:', e);
-      alert("Errore nell'apertura di SCEGLI 5. Controlla roster e riprova.");
+      alert("Errore nell'apertura di SCEGLI 5: "+(e&&e.message?e.message:e));
     }
     return;
   }
@@ -5139,10 +5142,17 @@ applyDeviceLayout();
 document.addEventListener('click', (ev)=>{
   const t=ev.target;
   if(t && (t.id==='btnStato' || (t.closest && t.closest('#btnStato')))){
-    try{ togglePeriodo(); }catch(e){}
+    try{ togglePeriodo(); }catch(e){ console.error(e); alert('Errore INIZIA: '+(e&&e.message?e.message:e)); }
   }
 }, true);
 
+
+// ==== Global error surface (helps debugging on mobile) ====
+window.onerror = function(msg, src, line, col, err){
+  try{ console.error('JS ERROR', msg, src, line, col, err); }catch(e){}
+  try{ alert('Errore JS: '+msg+'\n(riga '+line+')'); }catch(e){}
+  return false;
+};
 window.addEventListener('load', ()=>{
   try{
     const b=document.getElementById('btnStato');
