@@ -434,19 +434,12 @@ body.viewer #modalStats{display:block!important;}
 body.viewer #actionScreen{display:none!important;}
 body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
-  /* ===== VIEWER: comportamento tasto CHIUDI ===== */
+/* viewer: di base nascondi il CHIUDI a destra (non serve nello STAT LIVE principale) */
+body.viewer #statsCloseBtn{display:none!important;}
 
-/* Nascondi CHIUDI solo nella schermata STAT LIVE principale */
-body.viewer #statsMainWrap ~ .topbar .closeTop{
-  display:none!important;
-}
-
-/* Mostra CHIUDI in TABELLINI e QUINTETTI */
-body.viewer #tabelliniWrap .closeTop,
-body.viewer #quintettiWrap .closeTop{
-  display:inline-flex!important;
-}
-
+/* viewer: il tasto in alto a sinistra compare SOLO in TABELLINI/QUINTETTI */
+body.viewer #viewerBackBtn{display:none!important;}
+body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
 
 
@@ -515,23 +508,6 @@ body.tablet .btnA{
   min-height: 90px;
   font-size: 22px;
 }
-  
-/* ================= VIEWER: gestione CHIUDI ================= */
-
-/* Viewer: di default NASCONDI il tasto */
-body.viewer #statsTopClose{
-  display:none;
-}
-
-/* Viewer: MOSTRA CHIUDI in TABELLINI */
-body.viewer #tabelliniWrap:not(.hidden) ~ .topbar #statsTopClose{
-  display:inline-flex;
-}
-
-/* Viewer: MOSTRA CHIUDI in QUINTETTI */
-body.viewer #quintettiWrap:not(.hidden) ~ .topbar #statsTopClose{
-  display:inline-flex;
-}
 
 
 
@@ -563,6 +539,12 @@ body.viewer #quintettiWrap:not(.hidden) ~ .topbar #statsTopClose{
 .trow .val.reb{display:flex;gap:10px;justify-content:flex-end;align-items:baseline;white-space:nowrap}
 .trow .val.reb span{min-width:28px;text-align:right}
 .trow .val.reb b{min-width:34px;text-align:right}
+
+
+/* ===== STAT LIVE TOPBAR: titolo centrato + bottone a sinistra ===== */
+#modalStats .statsTopbar{display:flex;align-items:center;gap:10px;}
+#modalStats .statsTopbar h3{flex:1;text-align:center;}
+#modalStats #viewerBackBtn{min-width:44px;}
 
 </style>
 
@@ -679,7 +661,13 @@ body.viewer #quintettiWrap:not(.hidden) ~ .topbar #statsTopClose{
 body.viewer #actionScreen{display:none!important;}
 body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
-body.viewer #modalStats .closeTop{display:none!important;}
+/* viewer: di base nascondi il CHIUDI a destra (non serve nello STAT LIVE principale) */
+body.viewer #statsCloseBtn{display:none!important;}
+
+/* viewer: il tasto in alto a sinistra compare SOLO in TABELLINI/QUINTETTI */
+body.viewer #viewerBackBtn{display:none!important;}
+body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
+
 body.viewer .wrap > :not(#modalStats){display:none!important;}
 body.viewer #modalStats{display:block!important;}
 
@@ -1011,17 +999,17 @@ body.viewer #modalStats{display:block!important;}
 
 <!-- STATS -->
 <div id="modalStats" class="modal hidden"><div class="mcard">
-  <div class="topbar">
-  <h3 style="margin:0" id="statsTitle">STAT LIVE</h3>
+  <div class="topbar statsTopbar">
+    <!-- Viewer: torna indietro (visibile solo in TABELLINI/QUINTETTI) -->
+    <button id="viewerBackBtn" class="closeTop viewerBack hidden" onclick="smartCloseStats()">⬅️</button>
 
-  <button
-    class="closeTop"
-    id="statsTopClose"
-    onclick="smartCloseStats()">
-    CHIUDI
-  </button>
-</div>
+    <h3 style="margin:0;flex:1;text-align:center">STAT LIVE</h3>
 
+    <div style="display:flex;gap:8px;align-items:center">
+      <!-- In TABELLINI/QUINTETTI torna alle stats, altrimenti chiude il modal -->
+      <button id="statsCloseBtn" class="closeTop" onclick="smartCloseStats()">CHIUDI</button>
+    </div>
+  </div>
 
   <div id="tabelliniWrap" class="hidden">
     <div class="pill pillCenter">TABELLINI</div>
@@ -3762,7 +3750,7 @@ if(pmWrap){
 
 
 }
-function openStats(){ statsSel='ALL'; renderStats(); openModal('modalStats'); }
+function openStats(){ statsSel='ALL'; try{ document.body.classList.remove('viewerSub'); $('viewerBackBtn')?.classList.add('hidden'); }catch(e){} renderStats(); openModal('modalStats'); }
 
 // ===== TABELLINI (leaderboards) =====
 let __tabCat = 'PTS';
@@ -3775,11 +3763,13 @@ function smartCloseStats(){
   if(qw && !qw.classList.contains('hidden')) return closeQuintetti();
   const tw = $('tabelliniWrap');
   if(tw && !tw.classList.contains('hidden')) return closeTabellini();
+  try{ document.body.classList.remove('viewerSub'); $('viewerBackBtn')?.classList.add('hidden'); }catch(e){}
   closeModal('modalStats');
 }
 
 function openTabellini(){
   __tabCat = __tabCat || 'PTS';
+  try{ if(IS_VIEWER){ document.body.classList.add('viewerSub'); $('viewerBackBtn')?.classList.remove('hidden'); } }catch(e){}
   const w = $('tabelliniWrap');
   const main = $('statsMainWrap');
   if(w) w.classList.remove('hidden');
@@ -3787,6 +3777,7 @@ function openTabellini(){
   renderTabellini(__tabCat);
 }
 function closeTabellini(){
+  try{ if(IS_VIEWER){ document.body.classList.remove('viewerSub'); $('viewerBackBtn')?.classList.add('hidden'); } }catch(e){}
   const w = $('tabelliniWrap');
   const main = $('statsMainWrap');
   if(w) w.classList.add('hidden');
@@ -3796,6 +3787,7 @@ function closeTabellini(){
 // ===== QUINTETTI (lineup leaderboards) =====
 let qSel='PM';
 function openQuintetti(){
+  try{ if(IS_VIEWER){ document.body.classList.add('viewerSub'); $('viewerBackBtn')?.classList.remove('hidden'); } }catch(e){}
   $('statsMainWrap').classList.add('hidden');
   $('tabelliniWrap').classList.add('hidden');
   $('quintettiWrap').classList.remove('hidden');
@@ -3803,6 +3795,7 @@ function openQuintetti(){
   renderQuintetti();
 }
 function closeQuintetti(){
+  try{ if(IS_VIEWER){ document.body.classList.remove('viewerSub'); $('viewerBackBtn')?.classList.add('hidden'); } }catch(e){}
   $('quintettiWrap').classList.add('hidden');
   $('statsMainWrap').classList.remove('hidden');
 }
