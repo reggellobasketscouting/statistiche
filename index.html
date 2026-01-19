@@ -653,6 +653,16 @@ body.viewer #modalStats .closeTop{display:none!important;}
 body.viewer .wrap > :not(#modalStats){display:none!important;}
 body.viewer #modalStats{display:block!important;}
 
+
+/* ===== Share link bar ===== */
+.shareBar{display:flex;align-items:center;gap:8px;margin-top:8px;max-width:240px;}
+.shareBar .shareLbl{font-size:11px;color:#9aa0a6;min-width:34px;text-align:left;}
+.shareBar input{flex:1;min-width:0;padding:6px 8px;border-radius:10px;border:1px solid #2e2e2e;background:#0f0f0f;color:#e6e6e6;font-size:11px;}
+@media (max-width:420px){
+  .shareBar{max-width:210px;gap:6px;}
+  .shareBar .shareLbl{font-size:10px;min-width:30px;}
+  .shareBar input{font-size:10px;padding:5px 7px;}
+}
 /* ===== Falli speciali KPI ===== */
 .foulSpec{color:#ff3b3b;font-weight:1000;margin-left:6px;}
 </style>
@@ -676,6 +686,11 @@ body.viewer #modalStats{display:block!important;}
       <div id="syncStatus">LOCALE</div>
       <button id="btnStato" onclick="togglePeriodo()">INIZIA Q1</button>
       <button class="btn-mini" onclick="openManualEdit()">✍️ MODIFICA</button>
+      <div id="shareBar" class="shareBar hidden">
+        <div class="shareLbl">LINK</div>
+        <input id="shareLink" readonly value="" />
+        <button class="btn-mini" onclick="copyShareLink()">COPIA</button>
+      </div>
     </div>
     <div class="score-box">
       <h1 id="scoreAway">0</h1><div class="team-name" id="nameA">TRASFERTA</div>
@@ -1295,6 +1310,7 @@ function setCurrentGame(id){
       sessionStorage.removeItem(CURRENT_GAME_ID_KEY);
     }
   }catch(e){}
+  try{ updateShareLink(); }catch(e){}
 }
 function loadCurrentGameFromStorage(){
   try{
@@ -1526,6 +1542,7 @@ async function newGameFlow(){
   renderRoster();
   replay();
   updateUI();
+  updateShareLink();
 
   autosave(); // crea subito il salvataggio
 
@@ -1809,11 +1826,18 @@ function connectToCloud(gameId){
   if(!initFirebase()) return;
   CLOUD_GAME_ID = String(gameId||"").trim();
   if(!CLOUD_GAME_ID) return;
-  FB_REF = FB_DB.ref("games/"+CLOUD_GAME_ID);
-  setSyncLabel("LIVE: "+CLOUD_GAME_ID + (IS_VIEWER?" (VIEW)":""));
 
-  // Viewer: ascolta e applica
-  FB_REF.on("value", snap=>{
+  // owner uid: in viewer from URL, in scout from auth
+  const owner = IS_VIEWER ? (qs('uid')||'') : (AUTH_UID||'');
+  if(!owner){
+    setSyncLabel(IS_VIEWER ? 'VIEW: manca uid' : 'LIVE: ACCEDI');
+    return;
+  }
+
+  FB_REF = FB_DB.ref('users/'+owner+'/games/'+CLOUD_GAME_ID);
+  setSyncLabel('LIVE: '+CLOUD_GAME_ID + (IS_VIEWER?' (VIEW)':''));
+
+  FB_REF.on('value', snap=>{
     const data=snap.val();
     if(!data || !data.state) return;
     try{
@@ -1822,12 +1846,45 @@ function connectToCloud(gameId){
       replay();
       updateUI();
 
-        const ms=document.getElementById('modalStats');
-        if(ms && !ms.classList.contains('hidden')){
-          renderStats();
-        }
+      const ms=document.getElementById('modalStats');
+      if(ms && !ms.classList.contains('hidden')){
+        renderStats();
+      }
+      // aggiorna sempre il link in alto
+      updateShareLink();
     }catch(e){}
   });
+}
+
+// ===== Share/View link (cloud-only) ===== (cloud-only) =====
+function buildShareLink(){
+  if(!CURRENT_GAME_ID) return '';
+  const base = location.origin + location.pathname;
+  const uid = (isAuthed() && AUTH_UID) ? String(AUTH_UID) : '';
+  // link view: include uid to evitare collisioni tra utenti
+  const q = new URLSearchParams();
+  q.set('view','1');
+  if(uid) q.set('uid', uid);
+  q.set('game', String(CURRENT_GAME_ID));
+  return base + '?' + q.toString();
+}
+function updateShareLink(){
+  const bar = document.getElementById('shareBar');
+  const inp = document.getElementById('shareLink');
+  if(!bar || !inp) return;
+  const link = buildShareLink();
+  inp.value = link;
+  // mostra la barra solo se ho una partita corrente
+  bar.classList.toggle('hidden', !link);
+}
+function copyShareLink(){
+  const link = buildShareLink();
+  if(!link) return;
+  try{ navigator.clipboard.writeText(link); flash('green'); }
+  catch(e){
+    const i=document.getElementById('shareLink');
+    if(i){ i.focus(); i.select(); document.execCommand('copy'); }
+  }
 }
 
 async function cloudPush(stateObj){
@@ -4840,6 +4897,7 @@ function startNewFromLanding(){
   initDefaults();
   bootstrapRosterData();
   renderRoster();
+  replay();
   updateUI();
 
   // popola campi setup da stato
@@ -4867,6 +4925,9 @@ function startLoadFromLanding(){
 /* ===================== BOOT ===================== */
 document.addEventListener('DOMContentLoaded',()=>{
   initDefaults();
+  // carica eventuale stato cache (utile per inizializzare S.p e i punteggi)
+  try{ loadAutosave(); }catch(e){}
+  replay();
 
   // setup inputs
   $('quarterLenSel').value=String(S.quarterLenMin);
@@ -4888,6 +4949,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderRoster();
   setBtnState();
   updateUI();
+  updateShareLink();
 
   // Se l'utente cambia app/schermo e poi torna, il browser può rilasciare il Wake Lock.
   // Lo riattiviamo automaticamente quando la pagina torna visibile e la partita è in corso.
@@ -4996,6 +5058,7 @@ applyDeviceLayout();
   FB_AUTH.onAuthStateChanged(async (user)=>{
     AUTH_USER = user || null;
     AUTH_UID = user ? user.uid : null;
+    try{ updateShareLink(); }catch(e){}
 
     const a=document.getElementById('authBtn');
     const o=document.getElementById('logoutBtn');
