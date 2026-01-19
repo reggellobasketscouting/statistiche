@@ -767,34 +767,17 @@ body.viewer #modalStats{display:block!important;}
 </div>
 
 
-<!-- LANDING (prima schermata) -->
-<div id="modalLanding" class="modal hidden"><div class="mcard">
-  <div class="topbar">
-    <h3 style="margin:0">BASKET SCOUT</h3>
-    <button class="closeTop" onclick="closeModal('modalLanding')">CHIUDI</button>
-  </div>
-  <div class="pill">Scegli cosa vuoi fare.</div>
-
-  <button class="btnW" style="background:var(--g);color:#fff" onclick="startNewFromLanding()">🆕 NUOVA PARTITA</button>
-  <button class="btnW" style="background:#e0e0e0;color:#111" onclick="startLoadFromLanding()">📂 CARICA PARTITA</button>
-
-  <div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.25">
-    Nota: i link <b>VIEW</b> aprono direttamente le statistiche.
-  </div>
-</div></div>
-
-
 <!-- HOME / PARTITE -->
 <div id="modalStartup" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">PARTITE SALVATE</h3>
-    <button class="closeTop" onclick="goHome()">CHIUDI</button>
+    <button class="closeTop" onclick="newGameFlow()">NUOVA</button>
   </div>
   <div class="pill">Seleziona una partita o creane una nuova (nome unico).</div>
 
   <div id="gamesList"></div>
 
-  <button class="btnW" style="background:#333;color:#fff" onclick="goHome()" >CHIUDI</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalStartup')">CHIUDI</button>
 </div></div>
 
 
@@ -802,17 +785,9 @@ body.viewer #modalStats{display:block!important;}
 <div id="modalSetup" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">SETUP PARTITA</h3>
-    <button class="closeTop" onclick="goHome()">CHIUDI</button>
+    <button class="closeTop" onclick="closeModal('modalSetup')">CHIUDI</button>
   </div>
   <div class="pill">Locale • Roster • Durate periodi</div>
-
-  <div style="margin-top:10px">
-    <div class="pill">Nome partita (unico)</div>
-    <input id="gameNameInput" type="text" placeholder="Es. U15 vs ABC" />
-    <div class="muted2" style="font-size:11px;margin-top:6px;line-height:1.25">
-      Scrivi qui il nome <b>prima</b> di premere <b>APPLICA</b>. Serve per riconoscere la partita in <b>PARTITE SALVATE</b>.
-    </div>
-  </div>
   <div class="grid2">
     <div><div class="pill">Durata quarto</div>
       <select id="quarterLenSel"><option value="10" selected>10 minuti</option><option value="12">12 minuti</option><option value="8">8 minuti</option></select>
@@ -1269,7 +1244,6 @@ const LAST_GAME_ID_KEY = 'BSP_V7_LAST_GAME_ID';
 
 // In viewer mode può restare null (usa storage "classico")
 let CURRENT_GAME_ID = null;
-let NEW_GAME_PENDING = false;
 
 function storageKey(){
   return CURRENT_GAME_ID ? ('BSP_V7_GAME_' + CURRENT_GAME_ID) : 'BSP_V7_AUTOSAVE';
@@ -2128,94 +2102,7 @@ function connectCloudFromSetup(){
   alert('Cloud connesso ✅\nOra puoi usare 📡 LIVE LINK');
 }
 
-async function applySetup(){
-  // Se sto creando una nuova partita dalla HOME, il nome viene scritto qui (no prompt)
-  const nameInp = ($('gameNameInput') ? $('gameNameInput').value : '').trim();
-  if(!CURRENT_GAME_ID){
-    if(!nameInp){
-      alert('Inserisci il NOME PARTITA (unico)');
-      try{ $('gameNameInput')?.focus(); }catch(e){}
-      return;
-    }
-
-    const norm = normalizeGameName(nameInp);
-
-    // controllo duplicati (cloud o locale)
-    if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
-      if(CLOUD_GAMES_CACHE.some(g=>g.normName===norm)){
-        alert('Esiste già una partita con questo nome ❌');
-        return;
-      }
-    }else{
-      const games = loadGamesIndex();
-      if(games.some(g=>g.normName===norm)){
-        alert('Esiste già una partita con questo nome ❌');
-        return;
-      }
-    }
-
-    const id = makeGameId(nameInp);
-    setCurrentGame(id);
-
-    // crea indice (cloud o locale)
-    if(isAuthed() && FB_DB){
-      try{
-        await cloudIndexRef().child(String(id)).set({
-          name: String(nameInp).trim(),
-          normName: norm,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          nameH: S.nameH || 'CASA',
-          nameA: S.nameA || 'TRASFERTA',
-          status: S.status || 'idle',
-          sH: Number(S.sH)||0,
-          sA: Number(S.sA)||0
-        });
-        await refreshCloudIndex();
-      }catch(e){
-        alert('Errore cloud index: '+(e && e.message ? e.message : e));
-      }
-    }else{
-      const games = loadGamesIndex();
-      games.unshift({
-        id, name: String(nameInp).trim(), normName: norm,
-        createdAt: Date.now(), updatedAt: Date.now(),
-        nameH: S.nameH || 'CASA', nameA: S.nameA || 'TRASFERTA',
-        status: S.status || 'idle', sH: Number(S.sH)||0, sA: Number(S.sA)||0
-      });
-      saveGamesIndex(games);
-    }
-
-    // imposta un ID cloud suggerito (solo UI) se vuoto
-    try{
-      const c = $('cloudIdInput');
-      if(c && !String(c.value||'').trim()) c.value = String(nameInp).trim().replace(/\s+/g,'_');
-    }catch(e){}
-  }else{
-    // partita già esistente: se cambi nome in setup, aggiorna l'indice
-    if(nameInp){
-      const games = loadGamesIndex();
-      const g = games.find(x=>String(x.id)===String(CURRENT_GAME_ID));
-      const old = g && g.name ? String(g.name) : '';
-      if(g && old !== String(nameInp).trim()){
-        g.name = String(nameInp).trim();
-        g.normName = normalizeGameName(g.name);
-        g.updatedAt = Date.now();
-        saveGamesIndex(games);
-        if(isAuthed() && FB_DB){
-          try{
-            await cloudIndexRef().child(String(CURRENT_GAME_ID)).update({
-              name: g.name,
-              normName: g.normName,
-              updatedAt: g.updatedAt
-            });
-            await refreshCloudIndex();
-          }catch(e){}
-        }
-      }
-    }
-  }
-
+function applySetup(){
   S.quarterLenMin=parseInt($('quarterLenSel').value,10)||10;
   S.otLenMin=parseInt($('otLenSel').value,10)||5;
   S.noi=$('noiSel').value==='Away'?'Away':'Home';
@@ -2240,7 +2127,6 @@ async function applySetup(){
   renderRoster();
   replay();
   autosave();
-  NEW_GAME_PENDING = false;
   closeModal('modalSetup');
 }
 
@@ -4883,51 +4769,6 @@ function goToGamesMenu(){
   openModal('modalStartup');
 }
 
-
-function goHome(){
-  // Torna alla HOME (Landing) dalla schermata Setup/Partite
-  try{ autosave(); }catch(e){}
-  try{
-    closeModal('modalSetup');
-    closeModal('modalStartup');
-    closeModal('modalChoose5');
-  }catch(e){}
-  if(!IS_VIEWER) openModal('modalLanding');
-}
-
-/* ===================== LANDING NAV ===================== */
-function startNewFromLanding(){
-  try{ closeModal('modalLanding'); }catch(e){}
-  // Nessun prompt: apri direttamente SETUP, il nome si scrive lì.
-  NEW_GAME_PENDING = true;
-  setCurrentGame(null);
-  initDefaults();
-  bootstrapRosterData();
-  renderRoster();
-  updateUI();
-
-  // popola campi setup da stato
-  try{
-    $('quarterLenSel').value=String(S.quarterLenMin);
-    $('otLenSel').value=String(S.otLenMin);
-    $('noiSel').value=S.noi;
-    if($('teamHomeName')) $('teamHomeName').value=String(S.nameH||'CASA');
-    if($('teamAwayName')) $('teamAwayName').value=String(S.nameA||'TRASFERTA');
-    buildMyTeamRowsFromRoster(S.myRoster||[]);
-    if($('oppTeamInput')) $('oppTeamInput').value=(S.oppRoster||[]).join('\n');
-    if($('gameNameInput')) $('gameNameInput').value='';
-    if($('cloudIdInput')) $('cloudIdInput').value='';
-    setTimeout(()=>{ try{ $('gameNameInput')?.focus(); }catch(e){} }, 50);
-  }catch(e){}
-
-  openModal('modalSetup');
-}
-function startLoadFromLanding(){
-  try{ closeModal('modalLanding'); }catch(e){}
-  renderHomeGames();
-  openModal('modalStartup');
-}
-
 /* ===================== BOOT ===================== */
 document.addEventListener('DOMContentLoaded',()=>{
   initDefaults();
@@ -4938,7 +4779,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('noiSel').value=S.noi;
   if($('teamHomeName')) $('teamHomeName').value=String(S.nameH||'CASA');
   if($('teamAwayName')) $('teamAwayName').value=String(S.nameA||'TRASFERTA');
-  if($('gameNameInput')) $('gameNameInput').value=String(currentGameName()||'');
   buildMyTeamRowsFromRoster(S.myRoster||[]);
   if($('oppTeamInput')) $('oppTeamInput').value=(S.oppRoster||[]).join('\n');
   var cloudInp = $('cloudIdInput');
@@ -5032,7 +4872,8 @@ applyDeviceLayout();
       replay();
       updateUI();
     }
-    openModal('modalLanding');
+    renderHomeGames();
+    openModal('modalStartup');
     return;
   }
 
@@ -5068,13 +4909,12 @@ applyDeviceLayout();
 
     if(!user){
       CLOUD_GAMES_CACHE = null;
-      // se l'utente è nella schermata CARICA PARTITA, mostra un messaggio
-      if(!document.getElementById('modalStartup')?.classList.contains('hidden')){
-        renderHomeGames();
-        const host = document.getElementById('gamesList');
-        if(host){
-          host.innerHTML = '<div class="muted2" style="font-size:12px;line-height:1.3">Per usare l’archivio online su piu’ dispositivi, fai <b>ACCEDI</b> (Google).<br/>Dopo l’accesso vedrai tutte le partite salvate nel cloud.</div>';
-        }
+      // mostra home con messaggio
+      renderHomeGames();
+      openModal('modalStartup');
+      const host = document.getElementById('gamesList');
+      if(host){
+        host.innerHTML = '<div class="muted2" style="font-size:12px;line-height:1.3">Per usare l’archivio online su piu’ dispositivi, fai <b>ACCEDI</b> (Google).<br/>Dopo l’accesso vedrai tutte le partite salvate nel cloud.</div>';
       }
       return;
     }
@@ -5093,14 +4933,9 @@ applyDeviceLayout();
       updateUI();
     }
 
-    // se l'utente è nella schermata CARICA PARTITA, aggiorna la lista
-    if(!document.getElementById('modalStartup')?.classList.contains('hidden')){
-      renderHomeGames();
-    }
+    renderHomeGames();
+    openModal('modalStartup');
   });
-
-  // Prima pagina (Scout)
-  openModal('modalLanding');
 
 });
 
