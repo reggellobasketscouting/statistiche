@@ -35,7 +35,7 @@ body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:sys
 .techBadge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 6px;border-radius:6px;background:var(--y);color:#111;font-weight:1000;font-size:12px;margin-left:6px}
 #labelPeriodo{font-weight:1000;color:var(--acc);font-size:20px;letter-spacing:.4px}
 #syncStatus{font-size:10px;color:#7fff7f;margin-top:3px}
-#btnStato{width:100%;border:none;border-radius:14px;padding:10px;font-weight:1000;color:#fff;margin-top:8px}
+#btnStato{width:100%;border:none;border-radius:14px;padding:10px;font-weight:1000;color:#fff;margin-top:8px;position:relative;z-index:20;}
 .bonus-on{display:none;margin-top:5px;font-size:11px;color:#ff4b4b;font-weight:1000}
 .to-container{display:flex;justify-content:center;gap:5px;margin-top:8px}
 .dot{width:12px;height:12px;border:1px solid #555;border-radius:50%;background:#333}
@@ -1939,6 +1939,15 @@ function closeModal(id){
   }
 }
 
+function closeAllModals(exceptId){
+  const ids=['modalLanding','modalStartup','modalSetup','modalChoose5','modalEndPeriod','modalStats','modalEvents','modalManualEdit','modalFalliCheck','modalShot','modalFT','modalFoul','modalOppFoul','modalCambio','modalTabellini','modalQuintetti'];
+  ids.forEach(id=>{
+    if(id===exceptId) return;
+    const el=document.getElementById(id);
+    if(el) el.classList.add('hidden');
+  });
+}
+
 function parseMSS(raw){
   const d=String(raw||'').replace(/\D/g,'').slice(0,3);
   if(d.length!==3) return {ok:false,digits:d,rem:null};
@@ -2235,6 +2244,9 @@ async function applySetup(){
   autosave();
   NEW_GAME_PENDING = false;
   closeModal('modalSetup');
+  // sicurezza: chiudi eventuali overlay rimasti aperti
+  try{ closeModal('modalLanding'); closeModal('modalStartup'); }catch(e){}
+
 }
 
 function resetAll(){
@@ -5123,6 +5135,14 @@ applyDeviceLayout();
   
 
 // ==== SAFETY: bind INIZIA Q1 button click (some browsers ignore inline handlers after dynamic updates) ====
+// In piu: cattura click a livello documento nel caso un overlay trasparente intercetti il tap
+document.addEventListener('click', (ev)=>{
+  const t=ev.target;
+  if(t && (t.id==='btnStato' || (t.closest && t.closest('#btnStato')))){
+    try{ togglePeriodo(); }catch(e){}
+  }
+}, true);
+
 window.addEventListener('load', ()=>{
   try{
     const b=document.getElementById('btnStato');
