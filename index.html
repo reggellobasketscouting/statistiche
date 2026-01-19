@@ -2467,10 +2467,27 @@ function actionShot(){
 /* ===================== PERIOD FLOW ===================== */
 function togglePeriodo(){
   if(S.status==='ended') return;
+
+  // Harden: ensure derived stats exist before building the 5-player picker
+  try{
+    if(!S.p || !Object.keys(S.p).length) replay();
+  }catch(e){ try{ replay(); }catch(_){ } }
+
   if(S.status==='idle'){
+    // If roster isn't ready, don't proceed (prevents silent failures)
+    if(!Array.isArray(S.myRoster) || S.myRoster.length===0){
+      alert('Roster non impostato: apri SETUP PARTITA e inserisci i giocatori.');
+      return;
+    }
+
     S.choose5Sel = new Set();
-    buildChoose5();
-    openModal('modalChoose5');
+    try{
+      buildChoose5();
+      openModal('modalChoose5');
+    }catch(e){
+      console.error('Errore INIZIA PERIODO:', e);
+      alert("Errore nell'apertura di SCEGLI 5. Controlla roster e riprova.");
+    }
     return;
   }
   $('endPeriodTitle').textContent = `FINE PERIODO ${label()}`;
