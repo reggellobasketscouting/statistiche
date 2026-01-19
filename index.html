@@ -137,10 +137,11 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 
 /* ===== QUINTETTI (layout tabellino) ===== */
 .luCard{background:#0f0f0f;border:1px solid #2a2a2a;border-radius:16px;padding:12px;margin-top:10px}
-.luTop{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.luTop{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:stretch}
 .luPlayers{flex:1;min-width:0}
 .luP{font-weight:1000;font-size:12px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.luStats{width:170px;max-width:44vw}
+.luNum{color:#9aa0a6;font-weight:400;margin-left:6px}
+.luStats{width:170px;max-width:44vw;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0}
 /* Label a destra, valore a sinistra (colonna valori fissa) */
 .luStat{display:grid;grid-template-columns:1fr 78px;column-gap:10px;align-items:baseline;font-size:12px;font-weight:1000;line-height:1.35}
 .luStat .k{color:#bdbdbd;font-weight:900;text-align:right;white-space:nowrap}
@@ -512,9 +513,14 @@ body.tablet .btnA{
 .tabHeader{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .tabTitle{font-weight:1000;letter-spacing:.2px}
 .tabFilters{display:flex;flex-direction:column;gap:8px;margin:10px 0}
-.tabFilters .frow{display:flex;gap:8px;flex-wrap:wrap}
-.fbtn{flex:0 0 auto;padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-weight:1000;font-size:11px;letter-spacing:.2px}
+.tabFilters .frow{display:flex;gap:8px;}
+.tabFilters .frow .fbtn{flex:1 1 0;min-width:0;text-align:center;padding:8px 6px;}
+
+.fbtn{flex:1 1 0;padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-weight:1000;font-size:11px;letter-spacing:.2px}
 .fbtn.act{background:var(--acc);border-color:transparent;color:#111}
+
+#qFilters{flex-direction:row;}
+#qFilters .fchip{flex:1 1 0;min-width:0;text-align:center;}
 #tabelliniList{margin-top:8px}
 .trow{display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-bottom:8px}
 .trow .rk{width:22px;text-align:center;font-weight:1000;color:var(--y)}
@@ -545,7 +551,11 @@ body.tablet .btnA{
 .sb-final{margin-left:8px;padding:4px 10px;border-radius:999px;background:#2a0000;color:#ff3b3b;font-weight:1000;font-size:12px;letter-spacing:1px;}
 
 /* ===== Selector layout ===== */
-.selectorTeam{display:flex;justify-content:center;gap:8px;margin:8px 0 8px;}
+.selectorTeam{display:flex;flex-direction:column;gap:8px;margin:8px 0 8px;}
+.teamRow{display:flex;gap:8px;}
+.teamRow .selbtn{flex:1;}
+.btnSquadra{width:100%;flex:1;font-size:16px;padding:14px 12px;border-radius:16px;}
+
 .selectorPlayers{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 0 12px;padding:0 18px 6px;-webkit-overflow-scrolling:touch;}
 /* Fade ai bordi per indicare scroll (sinistra+destra) */
 .selectorPlayers{
@@ -3493,20 +3503,34 @@ function buildStatsSelector(){
     parent.appendChild(b);
   };
 
-  // Team button + TABELLINI + QUINTETTI (accanto)
-  mk(teamC, 'ALL', 'SQUADRA', false);
+  // TABELLINI + QUINTETTI sopra, SQUADRA sotto (full width)
+  const rowTop = document.createElement('div');
+  rowTop.className = 'teamRow';
 
   const tb = document.createElement('button');
   tb.className = 'selbtn';
   tb.textContent = 'TABELLINI';
   tb.onclick = ()=>openTabellini();
-  teamC.appendChild(tb);
+  rowTop.appendChild(tb);
 
   const qb = document.createElement('button');
   qb.className = 'selbtn';
   qb.textContent = 'QUINTETTI';
   qb.onclick = ()=>openQuintetti();
-  teamC.appendChild(qb);
+  rowTop.appendChild(qb);
+
+  const rowBottom = document.createElement('div');
+  rowBottom.className = 'teamRow';
+
+  // SQUADRA (piu grande e full width)
+  const squadraBtn = document.createElement('button');
+  squadraBtn.className = 'selbtn btnSquadra' + (statsSel==='ALL' ? ' act' : '');
+  squadraBtn.textContent = 'SQUADRA';
+  squadraBtn.onclick = ()=>{ statsSel='ALL'; renderStats(); };
+  rowBottom.appendChild(squadraBtn);
+
+  teamC.appendChild(rowTop);
+  teamC.appendChild(rowBottom);
 
   const mMap = minsByPlayer();
   const showTime = (S.status === 'ended');
@@ -3790,7 +3814,7 @@ function renderQuintetti(){
   const labelPl = (num)=>{
     const n = String(num);
     const nm = nameByNum[n];
-    return (nm? nm.toUpperCase() : ('#'+n)) + ` #${n}`;
+    return (nm? nm.toUpperCase() : ('#'+n)) + ` <span class="luNum">#${n}</span>`;
   };
 
   const sortVal=(L)=>{
