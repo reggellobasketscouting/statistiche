@@ -135,6 +135,37 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 .fchip.act{background:var(--acc);color:#111;border-color:#fff}
 .muted{color:var(--mut)}.muted2{color:var(--mut2)}
 
+/* ===== QUINTETTI (layout tabellino) ===== */
+.luCard{background:#0f0f0f;border:1px solid #2a2a2a;border-radius:16px;padding:12px;margin-top:10px}
+.luTop{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.luPlayers{flex:1;min-width:0}
+.luP{font-weight:1000;font-size:12px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.luStats{width:auto;max-width:44vw}
+/* Label a destra, valore a sinistra (colonna valori fissa) */
+.luStat{display:grid;grid-template-columns:1fr 78px;column-gap:10px;align-items:baseline;font-size:14px;font-weight:1000;line-height:1.35}
+.luStat .k{color:#bdbdbd;font-weight:900;text-align:right;white-space:nowrap}
+.luStat .v{font-weight:1000;text-align:left;white-space:nowrap}
+.luStat .vY{color:var(--y)}
+.luStat .vPmPos{color:var(--g)}
+.luStat .vPmNeg{color:var(--r)}
+.luSplit{height:1px;background:#2a2a2a;margin:10px 0}
+.luMetaRow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.luShot{display:flex;flex-direction:column;align-items:center;min-width:74px}
+.luShot .n{font-size:12px;font-weight:1000}
+.luShot .p{font-size:11px;color:#cfcfcf;font-weight:900;line-height:1.1}
+.luMini{font-size:11px;color:#cfcfcf;font-weight:900;text-align:center;line-height:1.25}
+.luMini b{font-weight:1000}
+
+/* Mobile: mantieni tutto su una riga, rimpicciolisci colonna destra */
+@media (max-width:420px){
+  .luStats{width:145px;max-width:42vw}
+  .luStat{font-size:11px;grid-template-columns:1fr 66px;column-gap:8px}
+}
+@media (max-width:360px){
+  .luStats{width:132px;max-width:40vw}
+  .luStat{font-size:10px;grid-template-columns:1fr 62px;column-gap:6px}
+}
+
 .endActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .endActions .btnW{margin-top:0}
 
@@ -472,6 +503,31 @@ body.tablet .btnA{
 }
 
 
+
+
+/* ===== TABELLINI (leaderboards) ===== */
+.btnTop{border:none;border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.10);color:#fff;font-weight:1000;letter-spacing:.2px}
+.btnTop:active{transform:scale(.98)}
+#tabelliniWrap{margin-top:10px}
+.tabHeader{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.tabTitle{font-weight:1000;letter-spacing:.2px}
+.tabFilters{display:flex;flex-direction: row;gap:8px;margin:10px 0;flex-wrap: nowrap;align-content: center;align-items: center;justify-content: center;}
+.tabFilters .frow{display:flex;gap:8px;flex-wrap:wrap}
+.fbtn{flex:0 0 auto;padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-weight:1000;font-size:11px;letter-spacing:.2px}
+.fbtn.act{background:var(--acc);border-color:transparent;color:#111}
+#tabelliniList{margin-top:8px}
+.trow{display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-bottom:8px}
+.trow .rk{width:22px;text-align:center;font-weight:1000;color:var(--y)}
+.trow .nm{flex:1;font-weight:900;letter-spacing:.2px}
+.trow .nm .num{opacity:.7;font-weight:800;margin-left:6px}
+.trow .val{text-align:right;font-weight:1000;white-space:nowrap}
+.trow .sub{font-size:11px;opacity:.75;margin-top:2px;font-weight:800}
+.trow .val .main{font-weight:1000}
+.trow .val .sub{display:block}
+.trow .val.reb{display:flex;gap:10px;justify-content:flex-end;align-items:baseline;white-space:nowrap}
+.trow .val.reb span{min-width:28px;text-align:right}
+.trow .val.reb b{min-width:34px;text-align:right}
+
 </style>
 
 <style id="statsLiveLayout">
@@ -489,7 +545,7 @@ body.tablet .btnA{
 .sb-final{margin-left:8px;padding:4px 10px;border-radius:999px;background:#2a0000;color:#ff3b3b;font-weight:1000;font-size:12px;letter-spacing:1px;}
 
 /* ===== Selector layout ===== */
-.selectorTeam{display:flex;justify-content:center;margin:8px 0 8px;}
+.selectorTeam{display:flex;justify-content:center;gap:8px;margin:8px 0 8px;}
 .selectorPlayers{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 0 12px;padding:0 18px 6px;-webkit-overflow-scrolling:touch;}
 /* Fade ai bordi per indicare scroll (sinistra+destra) */
 .selectorPlayers{
@@ -917,8 +973,29 @@ body.viewer #modalStats{display:block!important;}
 <div id="modalStats" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">STAT LIVE</h3>
-    <button class="closeTop" onclick="closeModal('modalStats')">CHIUDI</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <!-- In TABELLINI, CHIUDI torna alle statistiche (non chiude il modal) -->
+      <button class="closeTop" onclick="smartCloseStats()">CHIUDI</button>
+    </div>
   </div>
+
+  <div id="tabelliniWrap" class="hidden">
+    <div class="pill pillCenter">TABELLINI</div>
+    <div class="pill" style="margin-top:8px">Seleziona una classifica</div>
+    <div class="tabFilters" id="tabFilters"></div>
+    <div id="tabelliniList"></div>
+    <button class="btnW" style="margin-top:10px;background:#333;color:#fff" onclick="closeTabellini()">CHIUDI</button>
+  </div>
+
+  <div id="quintettiWrap" class="hidden">
+    <div class="pill pillCenter">QUINTETTI</div>
+    <div class="pill" style="margin-top:8px">ORDINE PER</div>
+    <div class="tabFilters" id="qFilters"></div>
+    <div id="quintettiList"></div>
+    <button class="btnW" style="margin-top:10px;background:#333;color:#fff" onclick="closeQuintetti()">CHIUDI</button>
+  </div>
+
+  <div id="statsMainWrap">
   <div class="stats-board">
     <div class="sb-team">
       <div class="sb-name" id="sbNameH">CASA</div>
@@ -1022,6 +1099,7 @@ body.viewer #modalStats{display:block!important;}
   <div style="margin-top:12px"><div class="pill">HEATMAP TIRI</div>
     <div class="court"><div class="arc"></div><div class="paint"></div><canvas class="ov" id="heatCanvas" width="310" height="240"></canvas></div>
   </div>
+</div><!-- end statsMainWrap -->
 </div></div>
 
 <!-- EVENTS -->
@@ -2392,7 +2470,8 @@ function replay(){
     tH:0,tA:0,
     inC:[], selP:null,
     p:{}, opp:{}, expelled:new Set(),
-    shots:[], stints:[]
+    shots:[], stints:[],
+    lineups:{}, lineupStints:[], curLKey:null
   };
 
   // init from current rosters
@@ -2425,6 +2504,28 @@ function replay(){
     const val=Number(v)||0;
     for(const pl of base.inC){ if(base.p[pl]) base.p[pl].pm -= val; }
   };
+  // QUINTETTI: key stabile (numeri ordinati) e accumulo stats per quintetto
+  const lineupKey=(arr)=> (Array.isArray(arr)?arr:[]).map(String).slice(0,5).sort((a,b)=>Number(a)-Number(b)).join('-');
+  const getL=(key, lineupArr)=>{
+    if(!key) return null;
+    if(!base.lineups[key]){
+      base.lineups[key]={
+        key, lineup:(lineupArr||[]).map(String).slice(0,5),
+        pf:0, pa:0,
+        twoM:0,twoA:0,threeM:0,threeA:0,ftM:0,ftA:0,
+        to:0, stl:0, foulMade:0, foulSuf:0, ro:0, rd:0,
+        sec:0
+      };
+    }
+    return base.lineups[key];
+  };
+  const closeOpenLineupStint=(q,outRem)=>{
+    for(let i=base.lineupStints.length-1;i>=0;i--){
+      const s=base.lineupStints[i];
+      if(s.q===q && s.outRem===null){ s.outRem=outRem; break; }
+    }
+  };
+
   const timeoutLimitFor=nQ=> (nQ<=2)?2:(nQ<=4?3:1);
   const periodLenSecFor=nQ=> ((nQ<=4?S.quarterLenMin:S.otLenMin)*60);
 
@@ -2462,8 +2563,10 @@ function replay(){
 
         const lineup=(Array.isArray(p.lineup)?p.lineup:[]).map(String).slice(0,5);
         base.inC=lineup;
-
+        base.curLKey = lineupKey(base.inC);
         const rem=Number(p.periodLenSec)||periodLenSecFor(base.nQ);
+        // lineup stint (quintetto)
+        base.lineupStints.push({key:base.curLKey, lineup:base.inC.slice(), q:base.nQ, inRem:rem, outRem:null});
         for(const pl of base.inC){
           base.stints.push({player:pl,q:base.nQ,inRem:rem,outRem:null});
         }
@@ -2507,10 +2610,12 @@ function replay(){
         const lineup = (Array.isArray(p.lineup) ? p.lineup : []).map(String).slice(0,5);
         if(lineup.length===5){
           base.inC = lineup;
+          base.curLKey = lineupKey(base.inC);
           // se gioco in corso, creo stints "aperti" con tempo rimanente
           if(base.status==='playing'){
             const rem = Number(p.remSec);
             const remOk = Number.isFinite(rem) ? Math.max(0, rem) : periodLenSecFor(base.nQ);
+            base.lineupStints.push({key:base.curLKey, lineup:base.inC.slice(), q:base.nQ, inRem:remOk, outRem:null});
             for(const pl of base.inC){
               base.stints.push({player:pl,q:base.nQ,inRem:remOk,outRem:null});
             }
@@ -2521,6 +2626,7 @@ function replay(){
       }
       case 'end_period':{
         const q=Number(p.nQ)||base.nQ;
+        closeOpenLineupStint(q,0);
         for(const pl of base.inC) closeOpenStint(pl,q,0);
 
         if(p.action==='end_game'){
@@ -2539,6 +2645,9 @@ function replay(){
         const v = Number(p.value)||0;
         addScoreOpp(v);
         addPMOpp(v);
+        const lk=base.curLKey || lineupKey(base.inC);
+        const L=getL(lk, base.inC);
+        if(L) L.pa += v;
         break;
       }
       case 'timeout':{
@@ -2553,12 +2662,23 @@ function replay(){
         if(p.kind==='reb_off') base.p[pl].ro++;
         if(p.kind==='turnover') base.p[pl].to++;
         if(p.kind==='steal') base.p[pl].stl++;
+        const lk=base.curLKey || lineupKey(base.inC);
+        const L=getL(lk, base.inC);
+        if(L){
+          if(p.kind==='reb_def') L.rd++;
+          if(p.kind==='reb_off') L.ro++;
+          if(p.kind==='turnover') L.to++;
+          if(p.kind==='steal') L.stl++;
+        }
         break;
       }
       case 'foul_made':{
         const pl=String(p.player||''); if(!base.p[pl]) break;
         base.p[pl].fouls++; base.p[pl].foulMade++;
         incTeamFoulMy();
+        const lk=base.curLKey || lineupKey(base.inC);
+        const L=getL(lk, base.inC);
+        if(L) L.foulMade++;
         break;
       }
       case 'foul_suf':{
@@ -2567,6 +2687,9 @@ function replay(){
         if(base.p[my]) base.p[my].foulSuf++;
         if(base.opp[opp]) base.opp[opp].fouls++;
         incTeamFoulOpp();
+        const lk=base.curLKey || lineupKey(base.inC);
+        const L=getL(lk, base.inC);
+        if(L) L.foulSuf++;
         break;
       }
       case 'shot':{
@@ -2576,13 +2699,24 @@ function replay(){
         if(val===2){ base.p[pl].twoA++; if(made) base.p[pl].twoM++; }
         else { base.p[pl].threeA++; if(made) base.p[pl].threeM++; }
         base.shots.push({player:pl,val,made,x:Number(p.x),y:Number(p.y)});
+        const lk=base.curLKey || lineupKey(base.inC);
+        const L=getL(lk, base.inC);
+        if(L){
+          if(val===2){ L.twoA++; if(made) L.twoM++; }
+          else { L.threeA++; if(made) L.threeM++; }
+          if(made) L.pf += val;
+        }
         if(made){ base.p[pl].pts+=val; addScoreMy(val); addPMMy(val); }
         break;
       }
       case 'ft':{
         const pl=String(p.player||''); if(!base.p[pl]) break;
         const made=!!p.made;
-        base.p[pl].ftA++; if(made){ base.p[pl].ftM++; base.p[pl].pts++; addScoreMy(1); addPMMy(1); }
+        base.p[pl].ftA++;
+        const lk=base.curLKey || lineupKey(base.inC);
+        const L=getL(lk, base.inC);
+        if(L){ L.ftA++; if(made) L.ftM++; if(made) L.pf += 1; }
+        if(made){ base.p[pl].ftM++; base.p[pl].pts++; addScoreMy(1); addPMMy(1); }
         break;
       }
       case 'sub':{
@@ -2592,11 +2726,18 @@ function replay(){
         const ins=(Array.isArray(p.ins)?p.ins:[]).map(String);
         if(!Number.isFinite(rem)) break;
 
+        // chiudo stint quintetto corrente al tempo del cambio
+        closeOpenLineupStint(q,rem);
+
         for(const pl of outs){ closeOpenStint(pl,q,rem); base.inC=base.inC.filter(x=>x!==pl); }
         for(const pl of ins){
           if(!base.inC.includes(pl)) base.inC.push(pl);
           base.stints.push({player:pl,q,inRem:rem,outRem:null});
         }
+
+        // apro nuovo stint quintetto
+        base.curLKey = lineupKey(base.inC);
+        base.lineupStints.push({key:base.curLKey, lineup:base.inC.slice(), q, inRem:rem, outRem:null});
         break;
       }
       case 'special_foul':{
@@ -2643,6 +2784,14 @@ function replay(){
     }
   }
 
+  // QUINTETTI: secondi giocati per quintetto dagli stint (inRem - outRem)
+  for(const s of base.lineupStints){
+    const outRem = (s.outRem===null || s.outRem===undefined) ? 0 : Number(s.outRem)||0;
+    const inRem  = Number(s.inRem)||0;
+    const dur = Math.max(0, inRem - outRem);
+    const L = getL(String(s.key||''), s.lineup||[]);
+    if(L) L.sec += dur;
+  }
   // write back
   S.status=base.status; S.nQ=base.nQ;
   S.sH=base.sH; S.sA=base.sA;
@@ -2657,6 +2806,7 @@ function replay(){
   S.expelled=base.expelled;
   S.shots=base.shots;
   S.stints=base.stints;
+  S.lineups=base.lineups;
 
   if(S.selP && (!S.inC.includes(S.selP) || (S.p[S.selP]?.fouls>=5) || S.expelled.has(S.selP))) S.selP=null;
 
@@ -3343,8 +3493,20 @@ function buildStatsSelector(){
     parent.appendChild(b);
   };
 
-  // Team button (centered above)
+  // Team button + TABELLINI + QUINTETTI (accanto)
   mk(teamC, 'ALL', 'SQUADRA', false);
+
+  const tb = document.createElement('button');
+  tb.className = 'selbtn';
+  tb.textContent = 'TABELLINI';
+  tb.onclick = ()=>openTabellini();
+  teamC.appendChild(tb);
+
+  const qb = document.createElement('button');
+  qb.className = 'selbtn';
+  qb.textContent = 'QUINTETTI';
+  qb.onclick = ()=>openQuintetti();
+  teamC.appendChild(qb);
 
   const mMap = minsByPlayer();
   const showTime = (S.status === 'ended');
@@ -3543,6 +3705,280 @@ if(pmWrap){
 
 }
 function openStats(){ statsSel='ALL'; renderStats(); openModal('modalStats'); }
+
+// ===== TABELLINI (leaderboards) =====
+let __tabCat = 'PTS';
+
+// CHIUDI (in alto) nel modal STAT LIVE:
+// - se sono in TABELLINI torna alle stats
+// - altrimenti chiude tutto il modal stats
+function smartCloseStats(){
+  const qw = $('quintettiWrap');
+  if(qw && !qw.classList.contains('hidden')) return closeQuintetti();
+  const tw = $('tabelliniWrap');
+  if(tw && !tw.classList.contains('hidden')) return closeTabellini();
+  closeModal('modalStats');
+}
+
+function openTabellini(){
+  __tabCat = __tabCat || 'PTS';
+  const w = $('tabelliniWrap');
+  const main = $('statsMainWrap');
+  if(w) w.classList.remove('hidden');
+  if(main) main.classList.add('hidden');
+  renderTabellini(__tabCat);
+}
+function closeTabellini(){
+  const w = $('tabelliniWrap');
+  const main = $('statsMainWrap');
+  if(w) w.classList.add('hidden');
+  if(main) main.classList.remove('hidden');
+}
+
+// ===== QUINTETTI (lineup leaderboards) =====
+let qSel='PM';
+function openQuintetti(){
+  $('statsMainWrap').classList.add('hidden');
+  $('tabelliniWrap').classList.add('hidden');
+  $('quintettiWrap').classList.remove('hidden');
+  buildQuintettiFilters();
+  renderQuintetti();
+}
+function closeQuintetti(){
+  $('quintettiWrap').classList.add('hidden');
+  $('statsMainWrap').classList.remove('hidden');
+}
+function buildQuintettiFilters(){
+  const c=$('qFilters');
+  if(!c) return;
+  c.innerHTML='';
+  const items=[
+    ['PF','PUNTI'],
+    ['MIN','TEMPO GIOCATO'],
+    ['PM','PLUS/MINUS']
+  ];
+  for(const [k,label] of items){
+    const b=document.createElement('button');
+    b.className='fchip'+(qSel===k?' act':'');
+    b.textContent=label;
+    b.onclick=()=>{ qSel=k; buildQuintettiFilters(); renderQuintetti(); };
+    c.appendChild(b);
+  }
+}
+function _fmtTime(sec){
+  sec=Math.max(0,Math.floor(sec||0));
+  const m=Math.floor(sec/60);
+  const s=sec%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function _pct(m,a){
+  if(!a) return '0,00%';
+  return ( (m*100)/a ).toFixed(2).replace('.',',')+'%';
+}
+function renderQuintetti(){
+  const list=$('quintettiList');
+  if(!list) return;
+  const Ls = Object.values(S.lineups||{});
+  if(!Ls.length){
+    list.innerHTML = `<div class="pill">Nessun quintetto disponibile (serve almeno un quarto iniziato e/o un cambio)</div>`;
+    return;
+  }
+
+  // lookup nomi giocatori
+  const nameByNum = {};
+  (S.myRoster||[]).forEach(pl=>{ nameByNum[String(pl.num)] = String(pl.name||'').trim(); });
+  const labelPl = (num)=>{
+    const n = String(num);
+    const nm = nameByNum[n];
+    return (nm? nm.toUpperCase() : ('#'+n)) + ` #${n}`;
+  };
+
+  const sortVal=(L)=>{
+    const pm=(L.pf||0)-(L.pa||0);
+    if(qSel==='PF') return L.pf||0;
+    if(qSel==='MIN') return L.sec||0;
+    return pm;
+  };
+  Ls.sort((a,b)=> (sortVal(b)-sortVal(a)) || (((b.pf||0)-(b.pa||0))-((a.pf||0)-(a.pa||0))) );
+
+  list.innerHTML='';
+  for(const L of Ls){
+    const pm=(L.pf||0)-(L.pa||0);
+    const keyLine=(L.lineup||[]).map(String).slice(0,5).sort((x,y)=>Number(x)-Number(y));
+    const rt=(L.ro||0)+(L.rd||0);
+    const card=document.createElement('div');
+    card.className='luCard';
+
+    const playersHtml = keyLine.map(n=>`<div class="luP">${labelPl(n)}</div>`).join('');
+
+    const pmCls = pm>=0 ? 'vPmPos' : 'vPmNeg';
+    card.innerHTML = `
+      <div class="luTop">
+        <div class="luPlayers">${playersHtml}</div>
+        <div class="luStats">
+          <div class="luStat"><span class="k">PUNTI FATTI</span><span class="v vY">${L.pf||0}</span></div>
+          <div class="luStat"><span class="k">MINUTI GIOCATI</span><span class="v vY">${_fmtTime(L.sec||0)}</span></div>
+          <div class="luStat"><span class="k">PLUS/MINUS</span><span class="v ${pmCls}">${pm>=0?'+':''}${pm}</span></div>
+        </div>
+      </div>
+      <div class="luSplit"></div>
+      <div class="luMetaRow">
+        <div class="luShot"><div class="n">2P <b>${L.twoM||0}/${L.twoA||0}</b></div><div class="p">(${_pct(L.twoM||0,L.twoA||0)})</div></div>
+        <div class="luShot"><div class="n">3P <b>${L.threeM||0}/${L.threeA||0}</b></div><div class="p">(${_pct(L.threeM||0,L.threeA||0)})</div></div>
+        <div class="luShot"><div class="n">TL <b>${L.ftM||0}/${L.ftA||0}</b></div><div class="p">(${_pct(L.ftM||0,L.ftA||0)})</div></div>
+      </div>
+      <div class="luMini" style="margin-top:6px">
+        PERSE <b>${L.to||0}</b> • RECUP <b>${L.stl||0}</b> • FF <b>${L.foulMade||0}</b> • FS <b>${L.foulSuf||0}</b> • RO <b>${L.ro||0}</b> • RD <b>${L.rd||0}</b> • RT <b>${rt}</b>
+      </div>
+    `;
+    list.appendChild(card);
+  }
+}
+
+function renderTabellini(cat){
+  __tabCat = cat || 'PTS';
+  const filters = $('tabFilters');
+  const list = $('tabelliniList');
+  if(!filters || !list) return;
+
+  // ===== Filtri su 3 righe (come richiesto) =====
+  const rowsCfg = [
+    [
+      {k:'PTS', t:'PUNTI'},
+      {k:'MIN', t:'TEMPO GIOCATO'},
+      {k:'PM',  t:'PLUS/MINUS'},
+    ],
+    [
+      {k:'2P',  t:'TIRO DA 2'},
+      {k:'3P',  t:'TIRO DA 3'},
+      {k:'FT',  t:'TIRI LIBERI'},
+    ],
+    [
+      {k:'FF',  t:'FALLI FATTI'},
+      {k:'FS',  t:'FALLI SUBITI'},
+      {k:'TO',  t:'PALLE PERSE'},
+      {k:'STL', t:'PALLE RECUPERATE'},
+      {k:'REB', t:'RIMBALZI'},
+    ]
+  ];
+
+  filters.innerHTML='';
+  rowsCfg.forEach(r=>{
+    const row = document.createElement('div');
+    row.className='frow';
+    r.forEach(c=>{
+      const b=document.createElement('button');
+      b.className='fbtn'+(c.k===__tabCat?' act':'');
+      b.textContent=c.t;
+      b.onclick=()=>renderTabellini(c.k);
+      row.appendChild(b);
+    });
+    filters.appendChild(row);
+  });
+
+  const mMap = minsByPlayer();
+  const rows = (S.myRoster||[]).map(pl=>{
+    const num = String(pl.num);
+    const st = S.p[num] || {};
+    const sec = Number(mMap[num]||0);
+
+    const makeShot = (m,a)=>({m:Number(m||0), a:Number(a||0)});
+    const s2 = makeShot(st.twoM, st.twoA);
+    const s3 = makeShot(st.threeM, st.threeA);
+    const sft= makeShot(st.ftM, st.ftA);
+
+    const val = (()=>{
+      switch(__tabCat){
+        case 'PTS': return {n:Number(st.pts||0), main:String(st.pts||0)};
+        case 'MIN': return {n:sec, main:fmtMMSS(sec)};
+        case 'PM':  {
+          const pm = Number(st.pm||0);
+          return {n:pm, main:(pm>0?'+':'')+String(pm)};
+        }
+        case '2P':  return {n:s2.m, main:`${s2.m}/${s2.a}`, sub:pct(s2.m,s2.a), pctNum: (s2.a? (s2.m/s2.a): -1), att:s2.a};
+        case '3P':  return {n:s3.m, main:`${s3.m}/${s3.a}`, sub:pct(s3.m,s3.a), pctNum: (s3.a? (s3.m/s3.a): -1), att:s3.a};
+        case 'FT':  return {n:sft.m,main:`${sft.m}/${sft.a}`,sub:pct(sft.m,sft.a),pctNum:(sft.a?(sft.m/sft.a):-1),att:sft.a};
+        case 'FF':  return {n:Number(st.foulMade||0), main:String(st.foulMade||0)};
+        case 'FS':  return {n:Number(st.foulSuf||0), main:String(st.foulSuf||0)};
+        case 'TO':  return {n:Number(st.to||0), main:String(st.to||0)};
+        case 'STL': return {n:Number(st.stl||0), main:String(st.stl||0)};
+        case 'REB': {
+          const ro = Number(st.ro||0);
+          const rd = Number(st.rd||0);
+          const rt = ro + rd;
+          return {n:rt, ro, rd, rt};
+        }
+        default:    return {n:0, main:'0'};
+      }
+    })();
+
+    return {
+      num,
+      name: pl.name || ('#'+num),
+      ...val
+    };
+  });
+
+  // sort
+  rows.sort((a,b)=>{
+    // shot categories: sort by made desc, then pct desc, then attempts desc
+    if(['2P','3P','FT'].includes(__tabCat)){
+      if((b.n||0)!=(a.n||0)) return (b.n||0)-(a.n||0);
+      if((b.pctNum??-1)!=(a.pctNum??-1)) return (b.pctNum??-1)-(a.pctNum??-1);
+      return (b.att||0)-(a.att||0);
+    }
+    // rimbalzi: ordina per TOT (RT), poi RD, poi RO
+    if(__tabCat==='REB'){
+      if((b.rt||0)!==(a.rt||0)) return (b.rt||0)-(a.rt||0);
+      if((b.rd||0)!==(a.rd||0)) return (b.rd||0)-(a.rd||0);
+      return (b.ro||0)-(a.ro||0);
+    }
+    // default: high to low
+    return (b.n||0)-(a.n||0);
+  });
+
+  // list
+  list.innerHTML='';
+  if(__tabCat==='REB'){
+    const h=document.createElement('div');
+    h.className='trow';
+    h.style.opacity='.9';
+    h.innerHTML = `
+      <div class="rk">#</div>
+      <div class="nm">GIOCATORE</div>
+      <div class="val reb"><span class="muted2">RD</span><span class="muted2">RO</span><b class="muted2">RT</b></div>
+    `;
+    list.appendChild(h);
+  }
+  rows.forEach((r,i)=>{
+    const d=document.createElement('div');
+    d.className='trow';
+    const nameHtml = `${esc(String(r.name||'').toUpperCase())}<span class="num">#${esc(r.num)}</span>`;
+
+    // percentuale sotto i numeri di tiro (non sotto il nome)
+    if(['2P','3P','FT'].includes(__tabCat)){
+      d.innerHTML = `
+        <div class="rk">${i+1}</div>
+        <div class="nm">${nameHtml}</div>
+        <div class="val"><div class="main">${esc(String(r.main||''))}</div>${r.sub?`<div class="sub">${esc(r.sub)}</div>`:''}</div>
+      `;
+    } else if(__tabCat==='REB'){
+      d.innerHTML = `
+        <div class="rk">${i+1}</div>
+        <div class="nm">${nameHtml}</div>
+        <div class="val reb"><span>${esc(String(r.rd||0))}</span><span>${esc(String(r.ro||0))}</span><b>${esc(String(r.rt||0))}</b></div>
+      `;
+    } else {
+      d.innerHTML = `
+        <div class="rk">${i+1}</div>
+        <div class="nm">${nameHtml}</div>
+        <div class="val">${esc(String(r.main||''))}</div>
+      `;
+    }
+    list.appendChild(d);
+  });
+}
+
 
 /* ===================== MANUAL EDIT (baseline) ===================== */
 let __manualLineup = null; // array di 5 numeri (string)
