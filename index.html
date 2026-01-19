@@ -767,17 +767,34 @@ body.viewer #modalStats{display:block!important;}
 </div>
 
 
+<!-- LANDING (prima schermata) -->
+<div id="modalLanding" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">BASKET SCOUT</h3>
+    <button class="closeTop" onclick="closeModal('modalLanding')">CHIUDI</button>
+  </div>
+  <div class="pill">Scegli cosa vuoi fare.</div>
+
+  <button class="btnW" style="background:var(--g);color:#fff" onclick="startNewFromLanding()">🆕 NUOVA PARTITA</button>
+  <button class="btnW" style="background:#e0e0e0;color:#111" onclick="startLoadFromLanding()">📂 CARICA PARTITA</button>
+
+  <div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.25">
+    Nota: i link <b>VIEW</b> aprono direttamente le statistiche.
+  </div>
+</div></div>
+
+
 <!-- HOME / PARTITE -->
 <div id="modalStartup" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">PARTITE SALVATE</h3>
-    <button class="closeTop" onclick="newGameFlow()">NUOVA</button>
+    <button class="closeTop" onclick="goHome()">CHIUDI</button>
   </div>
   <div class="pill">Seleziona una partita o creane una nuova (nome unico).</div>
 
   <div id="gamesList"></div>
 
-  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalStartup')">CHIUDI</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="goHome()" >CHIUDI</button>
 </div></div>
 
 
@@ -785,9 +802,17 @@ body.viewer #modalStats{display:block!important;}
 <div id="modalSetup" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">SETUP PARTITA</h3>
-    <button class="closeTop" onclick="closeModal('modalSetup')">CHIUDI</button>
+    <button class="closeTop" onclick="goHome()">CHIUDI</button>
   </div>
-  <div class="pill">Locale • Roster • Durate periodi</div>
+  <div class="pill">Cloud • Roster • Durate periodi</div>
+
+  <div style="margin-top:10px">
+    <div class="pill">Nome partita (unico)</div>
+    <input id="gameNameInput" type="text" placeholder="Es. U15 vs ABC" />
+    <div class="muted2" style="font-size:11px;margin-top:6px;line-height:1.25">
+      Scrivi qui il nome <b>prima</b> di premere <b>APPLICA</b>. Serve per riconoscere la partita in <b>PARTITE SALVATE</b>.
+    </div>
+  </div>
   <div class="grid2">
     <div><div class="pill">Durata quarto</div>
       <select id="quarterLenSel"><option value="10" selected>10 minuti</option><option value="12">12 minuti</option><option value="8">8 minuti</option></select>
@@ -824,18 +849,7 @@ body.viewer #modalStats{display:block!important;}
   </div>
 
   <div style="margin-top:10px">
-    <div class="pill">📡 LIVE (Cloud) • condividi in tempo reale</div>
-      <div><input id="cloudIdInput" type="text" placeholder="ID partita (es. U15_vs_ABC_2026-01-14)"></div>
-    <div class="grid2">
-      <div><button class="btnW" style="background:#e0e0e0;color:#111" onclick="connectCloudFromSetup()">CONNETTI</button></div>
-<button class="btnW" onclick="copyLiveLink()">📡 LIVE LINK</button>
-    </div>
-    <div class="muted2" style="font-size:11px;margin-top:8px;line-height:1.25">
-      Dopo la connessione comparirà il tasto <b>📡 LIVE LINK</b> per copiare il link viewer.
-    </div>
-  </div>
-
-  <button class="btnW" style="background:var(--g);color:#fff" onclick="applySetup()">APPLICA</button>
+    <button class="btnW" style="background:var(--g);color:#fff" onclick="applySetup()">APPLICA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="resetAll()">RESET TOTALE</button>
   <div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.25">Nota: Il periodo parte solo dopo <b>CONFERMA (5/5)</b>.</div>
 </div></div>
@@ -1244,6 +1258,7 @@ const LAST_GAME_ID_KEY = 'BSP_V7_LAST_GAME_ID';
 
 // In viewer mode può restare null (usa storage "classico")
 let CURRENT_GAME_ID = null;
+let NEW_GAME_PENDING = false;
 
 function storageKey(){
   return CURRENT_GAME_ID ? ('BSP_V7_GAME_' + CURRENT_GAME_ID) : 'BSP_V7_AUTOSAVE';
@@ -1352,11 +1367,23 @@ function getSavedGameMeta(gameId){
 }
 
 
-function renderHomeGames(){
+async function renderHomeGames(){
   const host = document.getElementById('gamesList');
   if(!host) return;
 
-  const list = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(!isAuthed() || !FB_DB){
+    host.innerHTML = `<div class="muted2" style="font-size:12px;line-height:1.3">
+      Per vedere o creare partite <b>devi ACCEDERE</b> (cloud-only).
+    </div>`;
+    return;
+  }
+
+  try{ await refreshCloudIndex(); }catch(e){}
+
+  const list = (Array.isArray(CLOUD_GAMES_CACHE)?CLOUD_GAMES_CACHE:[])
+    .slice()
+    .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+
   if(!list.length){
     host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita salvata.</div>`;
     return;
@@ -1364,12 +1391,11 @@ function renderHomeGames(){
 
   host.innerHTML = list.map(g=>{
     const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString() : '';
-    const meta = getSavedGameMeta(g.id) || {};
-    const th = meta.nameH || 'CASA';
-    const ta = meta.nameA || 'TRASFERTA';
-    const st = meta.status || 'idle';
-    const sH = Number.isFinite(meta.sH) ? meta.sH : 0;
-    const sA = Number.isFinite(meta.sA) ? meta.sA : 0;
+    const th = g.nameH || 'CASA';
+    const ta = g.nameA || 'TRASFERTA';
+    const st = g.status || 'idle';
+    const sH = Number.isFinite(g.sH) ? g.sH : 0;
+    const sA = Number.isFinite(g.sA) ? g.sA : 0;
 
     const ended = (st === 'ended');
     const stLabel = ended ? 'TERMINATA' : 'IN CORSO';
@@ -1391,13 +1417,12 @@ function renderHomeGames(){
             <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
             <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
             <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
-      	    <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
+
 
 function openGamesHome(){
   renderHomeGames();
@@ -1406,104 +1431,75 @@ function openGamesHome(){
 
 async function renameGameById(id){
   id = String(id||'').trim();
+  if(!id) return;
 
-  // Cloud
-  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
-    const cur = CLOUD_GAMES_CACHE.find(g=>g.id===id);
-    if(!cur) return;
-
-    const name = prompt('Nuovo nome partita:', cur.name || '');
-    if(name === null) return;
-
-    const n = String(name).trim();
-    if(!n) return alert('Nome non valido');
-
-    const norm = normalizeGameName(n);
-    const dup = CLOUD_GAMES_CACHE.some(g => g.id !== id && g.normName === norm);
-    if(dup) return alert('Esiste già una partita con questo nome.');
-
-    await cloudRenameGame(id, n);
-    renderHomeGames();
+  if(!isAuthed() || !FB_DB){
+    alert('Devi ACCEDERE (cloud-only)');
     return;
   }
 
-  // Locale
-  const games = loadGamesIndex();
-  const cur = games.find(g=>g.id===id);
-  if(!cur) return;
+  const old = (Array.isArray(CLOUD_GAMES_CACHE)?CLOUD_GAMES_CACHE:[]).find(g=>String(g.id)===String(id));
+  const oldName = old && old.name ? String(old.name) : '';
+  const nn = prompt('Nuovo nome partita', oldName);
+  if(nn==null) return;
+  const newName = String(nn).trim();
+  if(!newName){ alert('Nome non valido'); return; }
 
-  const name = prompt('Nuovo nome partita:', cur.name || '');
-  if(name === null) return;
+  const norm = normalizeGameName(newName);
 
-  const n = String(name).trim();
-  if(!n) return alert('Nome non valido');
+  // evita duplicati di nome (a parita' di utente)
+  if(Array.isArray(CLOUD_GAMES_CACHE) && CLOUD_GAMES_CACHE.some(g=>g.normName===norm && String(g.id)!==String(id))){
+    alert('Esiste gia una partita con questo nome ❌');
+    return;
+  }
 
-  const norm = normalizeGameName(n);
-  const dup = games.some(g => g.id !== id && g.normName === norm);
-  if(dup) return alert('Esiste già una partita con questo nome.');
-
-  cur.name = n;
-  cur.normName = norm;
-  cur.updatedAt = Date.now();
-  saveGamesIndex(games);
-  renderHomeGames();
+  try{
+    await cloudIndexRef().child(String(id)).update({
+      name: newName,
+      normName: norm,
+      updatedAt: Date.now()
+    });
+    await refreshCloudIndex();
+    renderHomeGames();
+  }catch(e){
+    alert('Errore cloud: '+(e && e.message ? e.message : e));
+  }
 }
+
 
 
 async function deleteGameById(id){
   id = String(id||'').trim();
+  if(!id) return;
 
-  // Cloud
-  if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
-    const cur = CLOUD_GAMES_CACHE.find(g=>g.id===id);
-    if(!cur) return;
-
-    const label = cur.name || 'Senza nome';
-    if(!confirm('Eliminare la partita "'+label+'"?\n\nQuesta azione non si può annullare.')) return;
-
-    await cloudDeleteGame(id);
-
-    if(CURRENT_GAME_ID === id){
-      setCurrentGame(null);
-      initDefaults();
-      bootstrapRosterData();
-      renderRoster();
-      updateUI();
-    }
-
-    renderHomeGames();
+  if(!isAuthed() || !FB_DB){
+    alert('Devi ACCEDERE (cloud-only)');
     return;
   }
 
-  // Locale
-  const games = loadGamesIndex();
-  const cur = games.find(g=>g.id===id);
-  if(!cur) return;
+  if(!confirm('Eliminare la partita "'+id+'"? Questa operazione non si puo annullare.')) return;
 
-  const label = cur.name || 'Senza nome';
-  if(!confirm(`Eliminare la partita "${label}"?
+  try{
+    // elimina stato e indice
+    await cloudGameRef(id).remove();
+    await cloudIndexRef().child(String(id)).remove();
 
-Questa azione non si può annullare.`)) return;
+    // pulizia legacy (vecchio ramo pubblico, se presente)
+    try{ await FB_DB.ref('games/'+String(id)).remove(); }catch(e){}
 
-  try{ localStorage.removeItem('BSP_V7_GAME_' + id); }catch(e){}
-
-  const next = games.filter(g=>g.id!==id);
-  saveGamesIndex(next);
-
-  if(CURRENT_GAME_ID === id){
-    setCurrentGame(null);
-
-    initDefaults();
-    bootstrapRosterData();
-    renderRoster();
-    updateUI();
-
+    await refreshCloudIndex();
     renderHomeGames();
-    openModal('modalStartup');
-  }else{
-    renderHomeGames();
+
+    // se era la partita aperta, torna a HOME
+    if(String(CURRENT_GAME_ID)===String(id)){
+      setCurrentGame(null);
+      goHome();
+    }
+  }catch(e){
+    alert('Errore eliminazione cloud: '+(e && e.message ? e.message : e));
   }
 }
+
 
 
 async function newGameFlow(){
@@ -1518,45 +1514,6 @@ async function newGameFlow(){
       alert('Esiste già una partita con questo nome ❌');
       return;
     }
-  }else{
-    const games = loadGamesIndex();
-    if(games.some(g=>g.normName===norm)){
-      alert('Esiste già una partita con questo nome ❌');
-      return;
-    }
-  }
-
-  const id = makeGameId(name);
-
-  // Cloud: crea entry indice
-  if(isAuthed() && FB_DB){
-    try{
-      await cloudIndexRef().child(String(id)).set({
-        name: String(name).trim(),
-        normName: norm,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        nameH: 'CASA',
-        nameA: 'TRASFERTA',
-        status: 'idle',
-        sH: 0,
-        sA: 0
-      });
-      await refreshCloudIndex();
-    }catch(e){
-      alert('Errore cloud index: '+(e && e.message ? e.message : e));
-    }
-  }else{
-    // Locale: aggiorna indice
-    const games = loadGamesIndex();
-    games.push({
-      id,
-      name: String(name).trim(),
-      normName: norm,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    });
-    saveGamesIndex(games);
   }
 
   setCurrentGame(id);
@@ -1578,33 +1535,36 @@ async function newGameFlow(){
 
 
 async function openGameById(id){
+  id = String(id||'').trim();
+  if(!id) return;
+
+  if(!isAuthed() || !FB_DB){
+    alert('Devi ACCEDERE per aprire le partite (cloud-only)');
+    return;
+  }
+
   setCurrentGame(id);
 
-  // Cloud first (se loggato)
-  if(isAuthed() && FB_DB){
-    try{
-      const state = await cloudLoadGame(id);
-      if(state){
-        localStorage.setItem(storageKey(), JSON.stringify(state));
-        // anche chiave diretta (utile per funzioni legacy)
-        localStorage.setItem('BSP_V7_GAME_' + String(id), JSON.stringify(state));
-      }
-    }catch(e){
-      // fallback locale
+  // collega subito il live (salvataggi e aggiornamenti)
+  connectToCloud(id);
+
+  try{
+    const state = await cloudLoadGame(id);
+    if(state){
+      // cache locale per il rendering (non e' "salvataggio locale": la sorgente e' il cloud)
+      localStorage.setItem(storageKey(), JSON.stringify(state));
+      localStorage.setItem('BSP_V7_GAME_' + String(id), JSON.stringify(state));
     }
+  }catch(e){
+    alert('Errore nel caricamento cloud: ' + (e && e.message ? e.message : e));
   }
 
-  const ok = loadAutosave();
+  loadAutosave();
+  replay();
+  updateUI();
   closeModal('modalStartup');
-
-  if(ok){
-    replay();
-    updateUI();
-    setBtnState();
-  }else{
-    openModal('modalSetup');
-  }
 }
+
 
 /* ===================== /MULTI-GAME STORAGE ===================== */
 
@@ -1870,7 +1830,7 @@ function connectToCloud(gameId){
   });
 }
 
-function cloudPush(stateObj){
+async function cloudPush(stateObj){
   if(IS_VIEWER) return;
   if(!FB_REF) return;
   try{ FB_REF.set({updatedAt:Date.now(), state: stateObj}); }catch(e){}
@@ -2092,17 +2052,106 @@ function fillSetupUI(){
 }
 
 function connectCloudFromSetup(){
-  const inp = document.getElementById('cloudIdInput');
-  const id = (inp ? inp.value : '').trim();
-  if(!id){ alert('Inserisci un ID partita'); return; }
-  S.cloudId = id;
-  try{ autosave(); }catch(e){}
-  connectToCloud(id);
-  try{ localStorage.setItem('BSP_CLOUD_GAME_ID', id); }catch(e){}
-  alert('Cloud connesso ✅\nOra puoi usare 📡 LIVE LINK');
+  alert('Non serve piu: tutte le partite sono ONLINE (cloud-only).');
 }
 
-function applySetup(){
+
+async function applySetup(){
+  // Se sto creando una nuova partita dalla HOME, il nome viene scritto qui (no prompt)
+  const nameInp = ($('gameNameInput') ? $('gameNameInput').value : '').trim();
+  if(!CURRENT_GAME_ID){
+    if(!isAuthed() || !FB_DB){
+      alert('Devi ACCEDERE per creare una partita (cloud-only)');
+      return;
+    }
+
+    if(!nameInp){
+      alert('Inserisci il NOME PARTITA (unico)');
+      try{ $('gameNameInput')?.focus(); }catch(e){}
+      return;
+    }
+
+    const norm = normalizeGameName(nameInp);
+
+    // controllo duplicati (cloud o locale)
+    if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)){
+      if(CLOUD_GAMES_CACHE.some(g=>g.normName===norm)){
+        alert('Esiste già una partita con questo nome ❌');
+        return;
+      }
+    }else{
+      const games = loadGamesIndex();
+      if(games.some(g=>g.normName===norm)){
+        alert('Esiste già una partita con questo nome ❌');
+        return;
+      }
+    }
+
+    const id = makeGameId(nameInp);
+    setCurrentGame(id);
+
+    // Cloud-only: collega subito la partita
+    connectToCloud(id);
+
+    // crea indice (cloud o locale)
+    if(isAuthed() && FB_DB){
+      try{
+        await cloudIndexRef().child(String(id)).set({
+          name: String(nameInp).trim(),
+          normName: norm,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          nameH: S.nameH || 'CASA',
+          nameA: S.nameA || 'TRASFERTA',
+          status: S.status || 'idle',
+          sH: Number(S.sH)||0,
+          sA: Number(S.sA)||0
+        });
+        await refreshCloudIndex();
+      }catch(e){
+        alert('Errore cloud index: '+(e && e.message ? e.message : e));
+      }
+    }else{
+      const games = loadGamesIndex();
+      games.unshift({
+        id, name: String(nameInp).trim(), normName: norm,
+        createdAt: Date.now(), updatedAt: Date.now(),
+        nameH: S.nameH || 'CASA', nameA: S.nameA || 'TRASFERTA',
+        status: S.status || 'idle', sH: Number(S.sH)||0, sA: Number(S.sA)||0
+      });
+      saveGamesIndex(games);
+    }
+
+    // imposta un ID cloud suggerito (solo UI) se vuoto
+    try{
+      const c = $('cloudIdInput');
+      if(c && !String(c.value||'').trim()) c.value = String(nameInp).trim().replace(/\s+/g,'_');
+    }catch(e){}
+  }else{
+    // partita già esistente: se cambi nome in setup, aggiorna l'indice
+    if(nameInp){
+      const games = loadGamesIndex();
+      const g = games.find(x=>String(x.id)===String(CURRENT_GAME_ID));
+      const old = g && g.name ? String(g.name) : '';
+      if(g && old !== String(nameInp).trim()){
+        g.name = String(nameInp).trim();
+        g.normName = normalizeGameName(g.name);
+        g.updatedAt = Date.now();
+        saveGamesIndex(games);
+        if(isAuthed() && FB_DB){
+          try{
+            await cloudIndexRef().child(String(CURRENT_GAME_ID)).update({
+              name: g.name,
+              normName: g.normName,
+              updatedAt: g.updatedAt
+            });
+            await refreshCloudIndex();
+          }catch(e){}
+        }
+      }
+    }
+  }
+
   S.quarterLenMin=parseInt($('quarterLenSel').value,10)||10;
   S.otLenMin=parseInt($('otLenSel').value,10)||5;
   S.noi=$('noiSel').value==='Away'?'Away':'Home';
@@ -2127,6 +2176,7 @@ function applySetup(){
   renderRoster();
   replay();
   autosave();
+  NEW_GAME_PENDING = false;
   closeModal('modalSetup');
 }
 
@@ -4717,7 +4767,7 @@ function loadAutosave(){
   }catch(e){ return false; }
 }
 
-function exportGameJSON(){
+async function exportGameJSON(){
   const blob=new Blob([JSON.stringify(serializeState(),null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -4769,6 +4819,51 @@ function goToGamesMenu(){
   openModal('modalStartup');
 }
 
+
+function goHome(){
+  // Torna alla HOME (Landing) dalla schermata Setup/Partite
+  try{ autosave(); }catch(e){}
+  try{
+    closeModal('modalSetup');
+    closeModal('modalStartup');
+    closeModal('modalChoose5');
+  }catch(e){}
+  if(!IS_VIEWER) openModal('modalLanding');
+}
+
+/* ===================== LANDING NAV ===================== */
+function startNewFromLanding(){
+  try{ closeModal('modalLanding'); }catch(e){}
+  // Nessun prompt: apri direttamente SETUP, il nome si scrive lì.
+  NEW_GAME_PENDING = true;
+  setCurrentGame(null);
+  initDefaults();
+  bootstrapRosterData();
+  renderRoster();
+  updateUI();
+
+  // popola campi setup da stato
+  try{
+    $('quarterLenSel').value=String(S.quarterLenMin);
+    $('otLenSel').value=String(S.otLenMin);
+    $('noiSel').value=S.noi;
+    if($('teamHomeName')) $('teamHomeName').value=String(S.nameH||'CASA');
+    if($('teamAwayName')) $('teamAwayName').value=String(S.nameA||'TRASFERTA');
+    buildMyTeamRowsFromRoster(S.myRoster||[]);
+    if($('oppTeamInput')) $('oppTeamInput').value=(S.oppRoster||[]).join('\n');
+    if($('gameNameInput')) $('gameNameInput').value='';
+    if($('cloudIdInput')) $('cloudIdInput').value='';
+    setTimeout(()=>{ try{ $('gameNameInput')?.focus(); }catch(e){} }, 50);
+  }catch(e){}
+
+  openModal('modalSetup');
+}
+function startLoadFromLanding(){
+  try{ closeModal('modalLanding'); }catch(e){}
+  renderHomeGames();
+  openModal('modalStartup');
+}
+
 /* ===================== BOOT ===================== */
 document.addEventListener('DOMContentLoaded',()=>{
   initDefaults();
@@ -4779,6 +4874,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('noiSel').value=S.noi;
   if($('teamHomeName')) $('teamHomeName').value=String(S.nameH||'CASA');
   if($('teamAwayName')) $('teamAwayName').value=String(S.nameA||'TRASFERTA');
+  if($('gameNameInput')) $('gameNameInput').value=String(currentGameName()||'');
   buildMyTeamRowsFromRoster(S.myRoster||[]);
   if($('oppTeamInput')) $('oppTeamInput').value=(S.oppRoster||[]).join('\n');
   var cloudInp = $('cloudIdInput');
@@ -4872,8 +4968,7 @@ applyDeviceLayout();
       replay();
       updateUI();
     }
-    renderHomeGames();
-    openModal('modalStartup');
+    openModal('modalLanding');
     return;
   }
 
@@ -4909,12 +5004,13 @@ applyDeviceLayout();
 
     if(!user){
       CLOUD_GAMES_CACHE = null;
-      // mostra home con messaggio
-      renderHomeGames();
-      openModal('modalStartup');
-      const host = document.getElementById('gamesList');
-      if(host){
-        host.innerHTML = '<div class="muted2" style="font-size:12px;line-height:1.3">Per usare l’archivio online su piu’ dispositivi, fai <b>ACCEDI</b> (Google).<br/>Dopo l’accesso vedrai tutte le partite salvate nel cloud.</div>';
+      // se l'utente è nella schermata CARICA PARTITA, mostra un messaggio
+      if(!document.getElementById('modalStartup')?.classList.contains('hidden')){
+        renderHomeGames();
+        const host = document.getElementById('gamesList');
+        if(host){
+          host.innerHTML = '<div class="muted2" style="font-size:12px;line-height:1.3">Per usare l’archivio online su piu’ dispositivi, fai <b>ACCEDI</b> (Google).<br/>Dopo l’accesso vedrai tutte le partite salvate nel cloud.</div>';
+        }
       }
       return;
     }
@@ -4933,9 +5029,14 @@ applyDeviceLayout();
       updateUI();
     }
 
-    renderHomeGames();
-    openModal('modalStartup');
+    // se l'utente è nella schermata CARICA PARTITA, aggiorna la lista
+    if(!document.getElementById('modalStartup')?.classList.contains('hidden')){
+      renderHomeGames();
+    }
   });
+
+  // Prima pagina (Scout)
+  openModal('modalLanding');
 
 });
 
