@@ -434,6 +434,19 @@ body.viewer #modalStats{display:block!important;}
 body.viewer #actionScreen{display:none!important;}
 body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
+  /* ===== VIEWER: comportamento tasto CHIUDI ===== */
+
+/* Nascondi CHIUDI solo nella schermata STAT LIVE principale */
+body.viewer #statsMainWrap ~ .topbar .closeTop{
+  display:none!important;
+}
+
+/* Mostra CHIUDI in TABELLINI e QUINTETTI */
+body.viewer #tabelliniWrap .closeTop,
+body.viewer #quintettiWrap .closeTop{
+  display:inline-flex!important;
+}
+
 
 
 
