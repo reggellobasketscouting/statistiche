@@ -515,6 +515,23 @@ body.tablet .btnA{
   min-height: 90px;
   font-size: 22px;
 }
+  
+/* ================= VIEWER: gestione CHIUDI ================= */
+
+/* Viewer: di default NASCONDI il tasto */
+body.viewer #statsTopClose{
+  display:none;
+}
+
+/* Viewer: MOSTRA CHIUDI in TABELLINI */
+body.viewer #tabelliniWrap:not(.hidden) ~ .topbar #statsTopClose{
+  display:inline-flex;
+}
+
+/* Viewer: MOSTRA CHIUDI in QUINTETTI */
+body.viewer #quintettiWrap:not(.hidden) ~ .topbar #statsTopClose{
+  display:inline-flex;
+}
 
 
 
@@ -995,12 +1012,16 @@ body.viewer #modalStats{display:block!important;}
 <!-- STATS -->
 <div id="modalStats" class="modal hidden"><div class="mcard">
   <div class="topbar">
-    <h3 style="margin:0">STAT LIVE</h3>
-    <div style="display:flex;gap:8px;align-items:center">
-      <!-- In TABELLINI, CHIUDI torna alle statistiche (non chiude il modal) -->
-      <button class="closeTop" onclick="smartCloseStats()">CHIUDI</button>
-    </div>
-  </div>
+  <h3 style="margin:0" id="statsTitle">STAT LIVE</h3>
+
+  <button
+    class="closeTop"
+    id="statsTopClose"
+    onclick="smartCloseStats()">
+    CHIUDI
+  </button>
+</div>
+
 
   <div id="tabelliniWrap" class="hidden">
     <div class="pill pillCenter">TABELLINI</div>
