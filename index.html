@@ -5121,6 +5121,18 @@ applyDeviceLayout();
 });
 
   
+
+// ==== SAFETY: bind INIZIA Q1 button click (some browsers ignore inline handlers after dynamic updates) ====
+window.addEventListener('load', ()=>{
+  try{
+    const b=document.getElementById('btnStato');
+    if(b){
+      b.onclick = togglePeriodo;
+      b.addEventListener('click', togglePeriodo);
+      b.style.cursor='pointer';
+    }
+  }catch(e){ }
+});
 </script>
 </body>
 </html>
