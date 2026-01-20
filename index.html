@@ -51,6 +51,15 @@ body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:sys
   position:relative;padding:12px 8px 18px;background:#2a2a2a;border:2px solid #3a3a3a;border-radius:18px;
   height:110px;min-height:110px;text-align:center;font-weight:1000;color:#fff;display:flex;flex-direction:column;justify-content:flex-start
 }
+/* Cards piu rettangolari e basse (solo per la modal "SCEGLI QUINTETTO") */
+.player-card.qpick{
+  height:80px;min-height:80px;
+  border-radius:12px;
+  padding:10px 8px 12px;
+}
+/* Permetti nome anche su 2 righe, e abbassa il numero per non coprire i nomi */
+.player-card.qpick .pname{min-height:26px;-webkit-line-clamp:2}
+.player-card.qpick .pnum{font-size:22px;margin-top:8px}
 .player-card.in{background:#1e3d24;border-color:var(--g)}
 .player-card.cambio{background:#d8d8d8;border-color:#bdbdbd;color:#111}
 .player-card.cambio .pname{color:#111}
@@ -157,13 +166,30 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 .luMini{font-size:11px;color:#cfcfcf;font-weight:900;text-align:center;line-height:1.25}
 .luMini b{font-weight:1000}
 
+/* ===== QUINTETTO CUSTOM (modal SCEGLI QUINTETTO) ===== */
+/* centra la testata (PLUS/MINUS + riga PUNTI/TEMPO) */
+#chooseQStats .luTop{display:flex;justify-content:center}
+#chooseQStats .luStats{width:auto;max-width:none;align-items:center;text-align:center}
+
+/* PLUS/MINUS centrato e piu' grande */
+#chooseQStats .qPmRow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+#chooseQStats .qPmLbl{font-size:13px;font-weight:1000;color:#bdbdbd;letter-spacing:.3px}
+#chooseQStats .qPmVal{font-size:30px;font-weight:1200;letter-spacing:.2px;line-height:1}
+#chooseQStats .vPmPos{color:var(--g)}
+#chooseQStats .vPmNeg{color:var(--r)}
+
+/* PUNTI e TEMPO sulla stessa riga, centrati, numeri arancioni piu' grandi */
+#chooseQStats .qRow2{margin-top:10px;display:flex;justify-content:center;align-items:baseline;gap:16px;flex-wrap:nowrap;white-space:nowrap;font-weight:1000}
+#chooseQStats .qRow2 .lab{font-size:12px;color:#bdbdbd;font-weight:900;margin:0 4px}
+#chooseQStats .qRow2 .val{font-size:26px;color:var(--acc);font-weight:1200;letter-spacing:.2px}
+
 /* Mobile: mantieni tutto su una riga, rimpicciolisci colonna destra */
 @media (max-width:420px){
-  .luStats{width:145px;max-width:42vw}
+  .luCard .luStats{width:145px;max-width:42vw}
   .luStat{font-size:11px;grid-template-columns:1fr 66px;column-gap:8px}
 }
 @media (max-width:360px){
-  .luStats{width:132px;max-width:40vw}
+  .luCard .luStats{width:132px;max-width:40vw}
   .luStat{font-size:10px;grid-template-columns:1fr 62px;column-gap:6px}
 }
 
@@ -870,6 +896,19 @@ body.viewer #modalStats{display:block!important;}
   <button class="btnW" style="background:#333;color:#fff" onclick="cancelChoose5()">ANNULLA</button>
 </div></div>
 
+<!-- CHOOSE QUINTETTO (custom) -->
+<div id="modalChooseQuintetto" class="modal hidden" style="z-index:1105"><div class="mcard">
+  <div class="topbar">
+    <button class="closeTop" onclick="closeChooseQuintetto()">CHIUDI</button>
+    <h3 style="margin:0;flex:1;text-align:center">SCEGLI QUINTETTO</h3>
+    <div style="width:72px"></div>
+  </div>
+  <div id="chooseQHint" class="pill">Seleziona 5 giocatori (0/5)</div>
+  <div class="grid-players" id="chooseQGrid"></div>
+  <div id="chooseQStats" class="luCard" style="margin-top:12px;display:none"></div>
+  <button class="btnW" style="background:#333;color:#fff" onclick="resetChooseQuintetto()">RESET</button>
+</div></div>
+
 <!-- END PERIOD -->
 <div id="modalEndPeriod" class="modal hidden"><div class="mcard">
   <div class="topbar">
@@ -1021,6 +1060,10 @@ body.viewer #modalStats{display:block!important;}
 
   <div id="quintettiWrap" class="hidden">
     <div class="pill pillCenter">QUINTETTI</div>
+
+    <!-- Selezione manuale quintetto (5 giocatori) -->
+    <button id="btnChooseQuintetto" class="btnW" style="margin-top:10px;background:var(--acc);color:#111" onclick="openChooseQuintetto()">SCEGLI QUINTETTO</button>
+
     <div class="pill" style="margin-top:8px">ORDINE PER</div>
     <div class="tabFilters" id="qFilters"></div>
     <div id="quintettiList"></div>
@@ -2433,6 +2476,121 @@ function confirm5(){
   closeModal('modalChoose5');
   addEvent({type:'start_period', payload:{ nQ:S.nQ, lineup:[...S.choose5Sel], periodLenSec:lenSec() }});
 }
+
+/* ===================== QUINTETTO CUSTOM (STAT LIVE) ===================== */
+let __chooseQSel = new Set();
+
+function openChooseQuintetto(){
+  // apre modal di scelta quintetto dentro STAT LIVE
+  __chooseQSel = new Set();
+  buildChooseQuintetto();
+  openModal('modalChooseQuintetto');
+}
+
+function closeChooseQuintetto(){
+  closeModal('modalChooseQuintetto');
+}
+
+function resetChooseQuintetto(){
+  __chooseQSel = new Set();
+  buildChooseQuintetto();
+}
+
+function buildChooseQuintetto(){
+  const grid = $('chooseQGrid');
+  const hint = $('chooseQHint');
+  const statsBox = $('chooseQStats');
+  if(!grid || !hint || !statsBox) return;
+
+  grid.innerHTML='';
+  statsBox.style.display='none';
+  statsBox.innerHTML='';
+
+  (S.myRoster||[]).forEach(pl=>{
+    const n = String(pl.num);
+    const b = document.createElement('button');
+    b.className = 'player-card qpick';
+    b.dataset.num = n;
+    b.innerHTML = `
+      <div class="pname">${esc(pl.name||'')}</div>
+      <div class="pnum">${esc(n)}</div>
+    `;
+
+    if(__chooseQSel.has(n)) b.classList.add('sel');
+
+    b.onclick = ()=>{
+      if(__chooseQSel.has(n)){
+        __chooseQSel.delete(n);
+        b.classList.remove('sel');
+      }else{
+        if(__chooseQSel.size>=5) return;
+        __chooseQSel.add(n);
+        b.classList.add('sel');
+      }
+      updateChooseQuintettoUI();
+    };
+    grid.appendChild(b);
+  });
+
+  updateChooseQuintettoUI();
+}
+
+function updateChooseQuintettoUI(){
+  const hint = $('chooseQHint');
+  const statsBox = $('chooseQStats');
+  if(!hint || !statsBox) return;
+
+  const k = __chooseQSel.size;
+  hint.textContent = `Seleziona 5 giocatori (${k}/5)`;
+
+  if(k!==5){
+    statsBox.style.display='none';
+    statsBox.innerHTML='';
+    return;
+  }
+
+  const key = [...__chooseQSel].map(String).slice(0,5).sort((a,b)=>Number(a)-Number(b)).join('-');
+  const L = (S.lineups||{})[key];
+
+  // quintetto non utilizzato
+  if(!L || !(Number(L.sec)||0)){
+    statsBox.style.display='block';
+    statsBox.innerHTML = `
+      <div class="pill" style="text-align:center;margin:0">QUINTETTO NON UTILIZZATO</div>
+    `;
+    return;
+  }
+
+  const pm = (L.pf||0) - (L.pa||0);
+  const pmCls = pm>=0 ? 'vPmPos' : 'vPmNeg';
+  const rt = (L.ro||0) + (L.rd||0);
+
+  statsBox.style.display='block';
+  statsBox.innerHTML = `
+    <div class="luTop">
+      <div class="luStats">
+        <div class="qPmRow">
+          <div class="qPmLbl"><b>PLUS/MINUS</b></div>
+          <div class="qPmVal ${pmCls}"><b>${pm>=0?'+':''}${pm}</b></div>
+        </div>
+        <div class="qRow2">
+          <span class="lab">PUNTI</span><span class="val">${L.pf||0}</span>
+          <span class="lab">TEMPO</span><span class="val">${_fmtTime(L.sec||0)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="luSplit"></div>
+    <div class="luMetaRow">
+      <div class="luShot"><div class="n">2P <b>${L.twoM||0}/${L.twoA||0}</b></div><div class="p">(${_pct(L.twoM||0,L.twoA||0)})</div></div>
+      <div class="luShot"><div class="n">3P <b>${L.threeM||0}/${L.threeA||0}</b></div><div class="p">(${_pct(L.threeM||0,L.threeA||0)})</div></div>
+      <div class="luShot"><div class="n">TL <b>${L.ftM||0}/${L.ftA||0}</b></div><div class="p">(${_pct(L.ftM||0,L.ftA||0)})</div></div>
+    </div>
+    <div class="luMini" style="margin-top:6px">
+      PERSE <b>${L.to||0}</b> • RECUP <b>${L.stl||0}</b> • FF <b>${L.foulMade||0}</b> • FS <b>${L.foulSuf||0}</b> • RO <b>${L.ro||0}</b> • RD <b>${L.rd||0}</b> • RT <b>${rt}</b>
+    </div>
+  `;
+}
+
 function nextPeriod(){ closeModal('modalEndPeriod'); addEvent({type:'end_period', payload:{ nQ:S.nQ, action:'next' }}); }
 function endGame(){ closeModal('modalEndPeriod'); addEvent({type:'end_period', payload:{ nQ:S.nQ, action:'end_game' }}); }
 
