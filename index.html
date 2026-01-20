@@ -588,6 +588,15 @@ body.tablet .btnA{
 #modalStats .statsTopbar h3{flex:1;text-align:center;}
 #modalStats #viewerBackBtn{min-width:44px;}
 
+
+.viewChk{
+  display:flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:12px;
+  background:#1f1f1f; border:1px solid rgba(255,255,255,.12);
+  color:#fff; font-weight:800; font-size:12px;
+}
+.viewChk input{ width:18px; height:18px; }
+
 </style>
 
 <style id="statsLiveLayout">
@@ -845,7 +854,6 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   </div>
   <div class="pill">Seleziona una partita per vedere le statistiche in modalità VIEW.</div>
   <div id="viewerGamesList"></div>
-  <button class="btnW" style="background:#333;color:#fff" onclick="viewerCloseHub()">CHIUDI</button>
 </div></div>
 
 
@@ -1347,6 +1355,19 @@ function loadGamesIndex(){
 function saveGamesIndex(list){
   try{ localStorage.setItem(GAMES_INDEX_KEY, JSON.stringify(list)); }catch(e){}
 }
+
+function setGameInView(id, isOn){
+  const games = loadGamesIndex();
+  const g = games.find(x=>x.id===id);
+  if(!g) return;
+  g.inView = !!isOn;
+  g.updatedAt = Date.now();
+  saveGamesIndex(games);
+  // aggiorna liste visibili
+  try{ renderHomeGames(); }catch(e){}
+  try{ viewerRefreshGames(); }catch(e){}
+}
+
 function normalizeGameName(name){
   return String(name||'').trim().toLowerCase().replace(/\s+/g,' ');
 }
@@ -1445,9 +1466,9 @@ function renderHomeGames(){
   const host = document.getElementById('gamesList');
   if(!host) return;
 
-  const list = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const list = loadGamesIndex().filter(g=>!!g.inView).sort((a,b)=>((b.updatedAt||0)-(a.updatedAt||0)));
   if(!list.length){
-    host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita salvata.</div>`;
+    host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita pubblicata.</div>`;
     return;
   }
 
@@ -1477,6 +1498,7 @@ function renderHomeGames(){
             <div class="ev-sub">Ultimo salvataggio: ${esc(when)}</div>
           </div>
           <div class="ev-actions" style="flex-wrap:wrap;justify-content:flex-end">
+            <label class="viewChk"><input type="checkbox" onchange="setGameInView(\'${esc(g.id)}\', this.checked)" ${g.inView ? "checked" : ""}> <span>VIEW</span></label>
             <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
             <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
             <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
@@ -1498,9 +1520,9 @@ function viewerRefreshGames(){
   const host = document.getElementById('viewerGamesList');
   if(!host) return;
 
-  const list = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const list = loadGamesIndex().filter(g=>!!g.inView).sort((a,b)=>((b.updatedAt||0)-(a.updatedAt||0)));
   if(!list.length){
-    host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita salvata.</div>`;
+    host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita pubblicata.</div>`;
     return;
   }
 
@@ -1743,7 +1765,8 @@ async function newGameFlow(){
       name: String(name).trim(),
       normName: norm,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      inView: false
     });
     saveGamesIndex(games);
   }
