@@ -1549,15 +1549,25 @@ function viewerOpenGame(id){
     }
   }catch(e){}
 
-  closeModal('modalViewerGames');
+  // In modalità HUB lasciamo la lista partite "sotto" e apriamo le statistiche in una nuova modal.
+  // Così, con "PARTITE" si torna immediatamente alla lista.
+  try{
+    const ms = document.getElementById('modalStats');
+    if(ms) ms.style.zIndex = 1200;
+  }catch(e){}
+
   openStats();
 }
 
 function viewerBackToHub(){
   try{ closeModal('modalStats'); }catch(e){}
   try{ document.body.classList.add('viewerHub'); }catch(e){}
+  // La lista era già aperta sotto: la aggiorniamo e la lasciamo visibile.
   viewerRefreshGames();
-  openModal('modalViewerGames');
+  try{
+    const mv = document.getElementById('modalViewerGames');
+    if(mv) mv.style.display = 'flex';
+  }catch(e){}
 }
 
 function viewerCloseHub(){
