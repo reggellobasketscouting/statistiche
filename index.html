@@ -457,10 +457,8 @@ body.noScroll{overflow:hidden;}
 body.viewer .wrap{max-width:560px;margin:0 auto;}
 /* In viewer hub permetti anche la schermata lista partite */
 body.viewer .wrap > :not(#modalStats):not(#modalViewerGames){display:none!important;}
-body.viewer #modalStats{display:block!important;}
 body.viewer #modalViewerGames{display:block!important;}
 body.viewer #actionScreen{display:none!important;}
-body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
 /* viewer: di base nascondi il CHIUDI a destra (non serve nello STAT LIVE principale) */
 body.viewer #statsCloseBtn{display:none!important;}
@@ -474,6 +472,16 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 /* Viewer hub: modal lista partite come pagina (non overlay) */
 body.viewer #modalViewerGames{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalViewerGames .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
+
+/* Viewer HUB: STAT LIVE come vera modal sopra la lista partite */
+body.viewer #modalStats{z-index:1200;}
+body.viewer.viewerHub #modalStats{
+  position:fixed!important;
+  inset:0!important;
+  background:rgba(0,0,0,.94)!important;
+  padding:14px!important;
+  overflow:auto!important;
+}
 
 
 
@@ -693,7 +701,6 @@ body.tablet .btnA{
 /* ===== Viewer pulito ===== */
 
 body.viewer #actionScreen{display:none!important;}
-body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
 /* viewer: di base nascondi il CHIUDI a destra (non serve nello STAT LIVE principale) */
 body.viewer #statsCloseBtn{display:none!important;}
