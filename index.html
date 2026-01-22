@@ -22,13 +22,11 @@
 *{box-sizing:border-box}
 body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:560px;margin:0 auto}
+#mainQuickActions{margin-top:10px}
+
+body.booting .wrap{visibility:hidden;}
 .hidden{display:none!important}
 .flash-green{background:#1e3d24!important}.flash-red{background:#4d0000!important}.flash-blue{background:#002b36!important}
-
-  body.booting .wrap{
-  visibility: hidden;
-}
-
 
 .scoreboard{display:grid;grid-template-columns:1fr .9fr 1fr;gap:10px;align-items:center;padding:12px;background:#000;border:2px solid #242424;border-radius:22px;margin-bottom:10px;text-align:center}
 .score-box h1{margin:0;font-size:44px;color:var(--y);line-height:1}
@@ -758,7 +756,29 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
   <div class="grid-players" id="rosterGrid"></div>
 
-  <!-- ACTION SCREEN (per azioni giocatore) -->
+  
+
+  <!-- QUICK ACTIONS (sempre visibili anche prima di "INIZIA QUARTO") -->
+  <div id="mainQuickActions">
+    <div class="row-1">
+      <button class="btnA blu" onclick="openStats()">📊 STAT LIVE</button>
+    </div>
+    <div class="row-4">
+      <button class="btnA gry" onclick="undoLast()">↩️ UNDO</button>
+      <button class="btnA gry" onclick="openEvents()">🧾 EVENTI</button>
+      <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
+      <button class="btnA dk" onclick="openModal('modalSetup')">⚙️ SETUP</button>
+    </div>
+    <div class="row-2">
+      <button class="btnA gry" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
+      <button class="btnA org" onclick="openManualEdit()">✍️ MODIFICA</button>
+    </div>
+    <div class="row-1">
+      <button class="btnA dk" onclick="goToGamesMenu()">🏠 PARTITE</button>
+    </div>
+  </div>
+
+<!-- ACTION SCREEN (per azioni giocatore) -->
   <div id="actionScreen" class="hidden">
     <div class="actionHeader">
       <div class="title">AZIONI • <span id="actionPlayerLabel">—</span></div>
@@ -838,7 +858,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
   <div id="gamesList"></div>
 
-  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalStartup')">CHIUDI</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="exitHome()">CHIUDI</button>
 </div></div>
 
 
@@ -1343,12 +1363,6 @@ function storageKey(){
   return CURRENT_GAME_ID ? ('BSP_V7_GAME_' + CURRENT_GAME_ID) : 'BSP_V7_AUTOSAVE';
 }
 
-  function exitHome(){
-  try{ document.body.classList.remove('booting'); }catch(e){}
-  try{ closeModal('modalStartup'); }catch(e){}
-}
-
-
 function loadGamesIndex(){
   if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)) return CLOUD_GAMES_CACHE;
   try{ return JSON.parse(localStorage.getItem(GAMES_INDEX_KEY) || '[]'); }
@@ -1500,8 +1514,7 @@ function renderHomeGames(){
 }
 
 function openGamesHome(){
-  renderHomeGames();
-  openModal("modalStartup");
+  enterHome();
 }
 
 /* ===================== VIEWER HUB (lista partite locali) ===================== */
@@ -1696,7 +1709,7 @@ Questa azione non si può annullare.`)) return;
     updateUI();
 
     renderHomeGames();
-    openModal('modalStartup');
+    if(HOME_ACTIVE) openModal('modalStartup');
   }else{
     renderHomeGames();
   }
@@ -2121,6 +2134,21 @@ function closeModal(id){
     clearSelectedPlayer();
   }
 }
+
+let HOME_ACTIVE = true;
+
+function enterHome(){
+  HOME_ACTIVE = true;
+  try{ renderHomeGames(); }catch(e){}
+  try{ openModal("modalStartup"); }catch(e){}
+}
+
+function exitHome(){
+  HOME_ACTIVE = false;
+  try{ document.body.classList.remove("booting"); }catch(e){}
+  try{ closeModal("modalStartup"); }catch(e){}
+}
+
 
 function parseMSS(raw){
   const d=String(raw||'').replace(/\D/g,'').slice(0,3);
@@ -3144,7 +3172,9 @@ function replay(){
   try{ syncWakeLock(__prevStatus, S.status); }catch(e){}
 
   if(S.status==='ended'){
-    if(!IS_VIEWER) openModal('modalGameOver');
+    // ✅ Se sto ancora mostrando la HOME all'avvio, non aprire "PARTITA TERMINATA"
+    const inHomeBoot = document.body.classList.contains('booting');
+    if(!IS_VIEWER && !inHomeBoot) openModal('modalGameOver');
     else closeModal('modalGameOver');
   }
 }
@@ -5087,16 +5117,16 @@ function goToGamesMenu(){
   // salva lo stato (per sicurezza)
   try{ autosave(); }catch(e){}
   closeModal('modalGameOver');
-  renderHomeGames();
-  openModal('modalStartup');
+  enterHome();
 }
 
 /* ===================== BOOT ===================== */
 document.addEventListener('DOMContentLoaded',()=>{
   initDefaults();
 
-  renderHomeGames();
-openModal('modalStartup');
+  // ✅ Start from Saved Games (Home)
+  enterHome();
+
 
   // setup inputs
   $('quarterLenSel').value=String(S.quarterLenMin);
@@ -5144,7 +5174,7 @@ openModal('modalStartup');
   // Viewer mode: connessione da URL (read-only)
   if(IS_VIEWER){
     // nasconde setup iniziale e blocca azioni di gioco
-    try{ closeModal('modalSetup'); closeModal('modalStartup'); }catch(e){}
+    try{ closeModal('modalSetup'); exitHome(); }catch(e){}
     if(CLOUD_GAME_ID){
       connectToCloud(CLOUD_GAME_ID);
       // disabilita azioni che modificano la partita
@@ -5182,7 +5212,7 @@ applyDeviceLayout();
       // Viewer HUB: mostra la lista delle partite salvate sul dispositivo
       setSyncLabel('VIEW: seleziona partita');
       document.body.classList.add('viewer','viewerHub');
-      try{ closeModal('modalSetup'); closeModal('modalStartup'); }catch(e){}
+      try{ closeModal('modalSetup'); exitHome(); }catch(e){}
       viewerRefreshGames();
       openModal('modalViewerGames');
 
@@ -5215,7 +5245,7 @@ applyDeviceLayout();
       updateUI();
     }
     renderHomeGames();
-    openModal('modalStartup');
+    if(HOME_ACTIVE) openModal('modalStartup');
     return;
   }
 
@@ -5253,7 +5283,7 @@ applyDeviceLayout();
       CLOUD_GAMES_CACHE = null;
       // mostra home con messaggio
       renderHomeGames();
-      openModal('modalStartup');
+    if(HOME_ACTIVE) openModal('modalStartup');
       const host = document.getElementById('gamesList');
       if(host){
         host.innerHTML = '<div class="muted2" style="font-size:12px;line-height:1.3">Per usare l’archivio online su piu’ dispositivi, fai <b>ACCEDI</b> (Google).<br/>Dopo l’accesso vedrai tutte le partite salvate nel cloud.</div>';
@@ -5276,12 +5306,66 @@ applyDeviceLayout();
     }
 
     renderHomeGames();
-    openModal('modalStartup');
+    if(HOME_ACTIVE) openModal('modalStartup');
   });
 
 });
 
   
 </script>
+
+<script>
+(function(){
+  function togglePreGameActions(){
+    try{
+      var el = document.getElementById('mainQuickActions') || document.getElementById('preGameActions');
+      if(!el) return;
+
+      // Show this block in pre-game and between-quarter breaks; hide only while a period is actively running.
+      var isLive = false;
+      if (typeof S !== 'undefined' && Array.isArray(S.events)){
+        var lastStart = -1, lastEnd = -1;
+        for (var i=0;i<S.events.length;i++){
+          var ev = S.events[i];
+          if(!ev || !ev.type) continue;
+          if(ev.type==='start_period') lastStart = i;
+          if(ev.type==='end_period') lastEnd = i;
+        }
+        // Live if the latest start_period has not yet been followed by an end_period
+        isLive = (lastStart > -1) && (lastStart > lastEnd);
+      }
+      el.style.display = isLive ? 'none' : '';
+    }catch(e){}
+  }
+
+  // Wrap functions that can change state/UI so the toggle always runs.
+  function wrap(name){
+    try{
+      var fn = window[name];
+      if(typeof fn !== 'function') return;
+      if(fn.__togWrapped) return;
+      var wrapped = function(){
+        var r = fn.apply(this, arguments);
+        togglePreGameActions();
+        return r;
+      };
+      wrapped.__togWrapped = true;
+      window[name] = wrapped;
+    }catch(e){}
+  }
+
+  wrap('replay');
+  wrap('updateUI');
+  wrap('addEvent');
+
+  document.addEventListener('DOMContentLoaded', function(){
+    togglePreGameActions();
+    // extra safety: re-check shortly after load (mobile rendering/state timing)
+    setTimeout(togglePreGameActions, 50);
+    setTimeout(togglePreGameActions, 250);
+  });
+})();
+</script>
+
 </body>
 </html>
