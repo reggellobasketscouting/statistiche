@@ -25,6 +25,11 @@ body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:sys
 .hidden{display:none!important}
 .flash-green{background:#1e3d24!important}.flash-red{background:#4d0000!important}.flash-blue{background:#002b36!important}
 
+  body.booting .wrap{
+  visibility: hidden;
+}
+
+
 .scoreboard{display:grid;grid-template-columns:1fr .9fr 1fr;gap:10px;align-items:center;padding:12px;background:#000;border:2px solid #242424;border-radius:22px;margin-bottom:10px;text-align:center}
 .score-box h1{margin:0;font-size:44px;color:var(--y);line-height:1}
 .team-name{margin-top:6px;font-size:13px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:#b5b5b5}
@@ -715,7 +720,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
 </head>
 
-<body>
+<body class="booting">
 <div class="wrap">
   <div class="scoreboard">
     <div class="score-box">
@@ -1338,6 +1343,12 @@ function storageKey(){
   return CURRENT_GAME_ID ? ('BSP_V7_GAME_' + CURRENT_GAME_ID) : 'BSP_V7_AUTOSAVE';
 }
 
+  function exitHome(){
+  try{ document.body.classList.remove('booting'); }catch(e){}
+  try{ closeModal('modalStartup'); }catch(e){}
+}
+
+
 function loadGamesIndex(){
   if(isAuthed() && Array.isArray(CLOUD_GAMES_CACHE)) return CLOUD_GAMES_CACHE;
   try{ return JSON.parse(localStorage.getItem(GAMES_INDEX_KEY) || '[]'); }
@@ -1761,7 +1772,7 @@ async function newGameFlow(){
 
   autosave(); // crea subito il salvataggio
 
-  closeModal('modalStartup');
+  exitHome();
   openModal('modalSetup');
 }
 
@@ -1784,7 +1795,7 @@ async function openGameById(id){
   }
 
   const ok = loadAutosave();
-  closeModal('modalStartup');
+  exitHome();
 
   if(ok){
     replay();
@@ -2084,12 +2095,12 @@ async function copyLiveLink(){
 
 function manualSave(){ autosave(); alert("Salvato ✅"); }
 function hasAutosave(){ try{ return !!localStorage.getItem(storageKey()); }catch(e){ return false; } }
-function restoreAutosave(){ closeModal("modalStartup"); loadAutosave(); replay(); updateUI(); }
+function restoreAutosave(){ exitHome(); loadAutosave(); replay(); updateUI(); }
 function startNewGame(){
   try{ localStorage.removeItem(storageKey()); }catch(e){}
   const clean = location.origin + location.pathname;
   if(location.search){ try{ history.replaceState({}, "", clean); }catch(e){} }
-  closeModal("modalStartup");
+  exitHome();
   openModal("modalSetup");
 }
 
@@ -5083,6 +5094,9 @@ function goToGamesMenu(){
 /* ===================== BOOT ===================== */
 document.addEventListener('DOMContentLoaded',()=>{
   initDefaults();
+
+  renderHomeGames();
+openModal('modalStartup');
 
   // setup inputs
   $('quarterLenSel').value=String(S.quarterLenMin);
