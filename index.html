@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Basket Scout Pro - v10</title>
+<title>Basket Reggello STATS</title>
 
 <!-- XLSX (excel) -->
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -130,7 +130,7 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 
 .ev-item{background:#0f0f0f;border:1px solid #2a2a2a;border-radius:16px;padding:12px;margin-top:10px}
 .ev-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.ev-title{font-weight:1000}
+.ev-title{font-weight:1000;font-size:14px}
 .ev-sub{font-size:11px;color:#cfcfcf;font-weight:900;margin-top:4px;line-height:1.25}
 .ev-actions{display:flex;gap:8px}
 .ev-actions button{padding:8px 10px;border-radius:12px;border:none;font-weight:1000}
@@ -455,17 +455,33 @@ body.noScroll{overflow:hidden;}
 
 /* ===== VIEWER: mostra solo STAT LIVE ===== */
 body.viewer .wrap{max-width:560px;margin:0 auto;}
-body.viewer .wrap > :not(#modalStats){display:none!important;}
-body.viewer #modalStats{display:block!important;}
+/* In viewer hub permetti anche la schermata lista partite */
+body.viewer .wrap > :not(#modalStats):not(#modalViewerGames){display:none!important;}
+body.viewer #modalViewerGames{display:block!important;}
 body.viewer #actionScreen{display:none!important;}
-body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
 /* viewer: di base nascondi il CHIUDI a destra (non serve nello STAT LIVE principale) */
 body.viewer #statsCloseBtn{display:none!important;}
+/* In viewer HUB (lista partite) riattiva un pulsante per tornare alla lista */
+body.viewer.viewerHub #statsCloseBtn{display:inline-flex!important;}
 
 /* viewer: il tasto in alto a sinistra compare SOLO in TABELLINI/QUINTETTI */
 body.viewer #viewerBackBtn{display:none!important;}
 body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
+
+/* Viewer hub: modal lista partite come pagina (non overlay) */
+body.viewer #modalViewerGames{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
+body.viewer #modalViewerGames .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
+
+/* Viewer HUB: STAT LIVE come vera modal sopra la lista partite */
+body.viewer #modalStats{z-index:1200;}
+body.viewer.viewerHub #modalStats{
+  position:fixed!important;
+  inset:0!important;
+  background:rgba(0,0,0,.94)!important;
+  padding:14px!important;
+  overflow:auto!important;
+}
 
 
 
@@ -685,7 +701,6 @@ body.tablet .btnA{
 /* ===== Viewer pulito ===== */
 
 body.viewer #actionScreen{display:none!important;}
-body.viewer #modalStats{position:static!important;inset:auto!important;background:transparent!important;padding:0!important;}
 body.viewer #modalStats .mcard{width:100%!important;max-width:560px;margin:0 auto!important;border-radius:18px;}
 /* viewer: di base nascondi il CHIUDI a destra (non serve nello STAT LIVE principale) */
 body.viewer #statsCloseBtn{display:none!important;}
@@ -693,9 +708,6 @@ body.viewer #statsCloseBtn{display:none!important;}
 /* viewer: il tasto in alto a sinistra compare SOLO in TABELLINI/QUINTETTI */
 body.viewer #viewerBackBtn{display:none!important;}
 body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
-
-body.viewer .wrap > :not(#modalStats){display:none!important;}
-body.viewer #modalStats{display:block!important;}
 
 /* ===== Falli speciali KPI ===== */
 .foulSpec{color:#ff3b3b;font-weight:1000;margin-left:6px;}
@@ -794,7 +806,7 @@ body.viewer #modalStats{display:block!important;}
     <div class="row-4">
       <button class="btnA gry" onclick="undoLast()">↩️ UNDO</button>
       <button class="btnA gry" onclick="openEvents()">🧾 EVENTI</button>
-      <button id="btnLiveLink" class="btnA gry hidden" onclick="copyLiveLink()">📡 LIVE LINK</button>
+      <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
       <button class="btnA dk" onclick="openModal('modalSetup')">⚙️ SETUP</button>
     </div>
 
@@ -822,6 +834,18 @@ body.viewer #modalStats{display:block!important;}
   <div id="gamesList"></div>
 
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalStartup')">CHIUDI</button>
+</div></div>
+
+
+<!-- VIEWER HUB: lista partite salvate (solo in ?view=1 senza &game=...) -->
+<div id="modalViewerGames" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">PARTITE SALVATE</h3>
+    <button class="closeTop" onclick="viewerRefreshGames()">AGGIORNA</button>
+  </div>
+  <div class="pill">Seleziona una partita per vedere le statistiche in modalità VIEW.</div>
+  <div id="viewerGamesList"></div>
+  <button class="btnW" style="background:#333;color:#fff" onclick="viewerCloseHub()">CHIUDI</button>
 </div></div>
 
 
@@ -1456,7 +1480,7 @@ function renderHomeGames(){
             <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
             <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
             <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
-      	    
+      	    <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
           </div>
         </div>
       </div>
@@ -1467,6 +1491,102 @@ function renderHomeGames(){
 function openGamesHome(){
   renderHomeGames();
   openModal("modalStartup");
+}
+
+/* ===================== VIEWER HUB (lista partite locali) ===================== */
+function viewerRefreshGames(){
+  const host = document.getElementById('viewerGamesList');
+  if(!host) return;
+
+  const list = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(!list.length){
+    host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita salvata.</div>`;
+    return;
+  }
+
+  host.innerHTML = list.map(g=>{
+    const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString() : '';
+    const meta = getSavedGameMeta(g.id) || {};
+    const th = meta.nameH || 'CASA';
+    const ta = meta.nameA || 'TRASFERTA';
+    const st = meta.status || 'idle';
+    const sH = Number.isFinite(meta.sH) ? meta.sH : 0;
+    const sA = Number.isFinite(meta.sA) ? meta.sA : 0;
+
+    const ended = (st === 'ended');
+    const stLabel = ended ? 'TERMINATA' : 'IN CORSO';
+    const stColor = ended ? '#ff5252' : '#00e676';
+
+    return `
+      <div class="ev-item">
+        <div class="ev-top">
+          <div>
+            <div class="ev-title">${esc(th)}</span>
+            </div>
+            <div class="ev-title">${esc(ta)}</span>
+            </div>
+            <div class="ev-title">
+            <span style="color:#ff9800;font-weight:1000;margin-left:8px">${sH} - ${sA}</span>
+            </div>
+            <div class="ev-sub">
+              <span style="color:${stColor};font-weight:1000">${stLabel}</span>
+            </div>
+            <div class="ev-sub">Ultimo salvataggio: ${esc(when)}</div>
+            <div class="ev-sub">${esc(g.name||'Senza nome')}</div>
+          </div>
+          <div class="ev-actions" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="b1" onclick="viewerOpenGame('${esc(g.id)}')">VEDI</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function viewerOpenGame(id){
+  id = String(id||'').trim();
+  if(!id) return;
+  setCurrentGame(id);
+  loadAutosave();
+  replay();
+  updateUI();
+
+  // in viewer hub: mostra pulsante per tornare alla lista
+  try{
+    document.body.classList.add('viewerHub');
+    const btn = document.getElementById('statsCloseBtn');
+    if(btn){
+      btn.textContent = 'PARTITE';
+      btn.onclick = ()=> viewerBackToHub();
+    }
+  }catch(e){}
+
+  // In modalità HUB lasciamo la lista partite "sotto" e apriamo le statistiche in una nuova modal.
+  // Così, con "PARTITE" si torna immediatamente alla lista.
+  try{
+    const ms = document.getElementById('modalStats');
+    if(ms) ms.style.zIndex = 1200;
+  }catch(e){}
+
+  openStats();
+}
+
+function viewerBackToHub(){
+  try{ closeModal('modalStats'); }catch(e){}
+  try{ document.body.classList.add('viewerHub'); }catch(e){}
+  // La lista era già aperta sotto: la aggiorniamo e la lasciamo visibile.
+  viewerRefreshGames();
+  try{
+    const mv = document.getElementById('modalViewerGames');
+    if(mv) mv.style.display = 'flex';
+  }catch(e){}
+}
+
+function viewerCloseHub(){
+  // torna alla versione "scout" rimuovendo i parametri view
+  const clean = location.origin + location.pathname;
+  try{ history.replaceState({}, '', clean); }catch(e){}
+  try{ location.href = clean; }catch(e){}
 }
 
 async function renameGameById(id){
@@ -1534,10 +1654,10 @@ async function deleteGameById(id){
       bootstrapRosterData();
       renderRoster();
       updateUI();
-  updateLiveLinkButton();
     }
 
     renderHomeGames();
+    try{ if(IS_VIEWER) viewerRefreshGames(); }catch(e){}
     return;
   }
 
@@ -1569,6 +1689,9 @@ Questa azione non si può annullare.`)) return;
   }else{
     renderHomeGames();
   }
+
+  // Se il viewer hub è aperto, aggiorna la lista (così la partita sparisce subito)
+  try{ if(IS_VIEWER) viewerRefreshGames(); }catch(e){}
 }
 
 
@@ -1911,20 +2034,12 @@ function setSyncLabel(txt){
 }
 
 
-
-function updateLiveLinkButton(){
-  const btn = document.getElementById('btnLiveLink');
-  if(!btn) return;
-  const show = !!(CLOUD_GAME_ID && !IS_VIEWER);
-  btn.classList.toggle('hidden', !show);
-}
 function connectToCloud(gameId){
   if(!initFirebase()) return;
   CLOUD_GAME_ID = String(gameId||"").trim();
   if(!CLOUD_GAME_ID) return;
   FB_REF = FB_DB.ref("games/"+CLOUD_GAME_ID);
   setSyncLabel("LIVE: "+CLOUD_GAME_ID + (IS_VIEWER?" (VIEW)":""));
-  updateLiveLinkButton();
 
   // Viewer: ascolta e applica
   FB_REF.on("value", snap=>{
@@ -5050,11 +5165,28 @@ applyDeviceLayout();
       if(as) as.classList.add('hidden');
 
     }else{
-      setSyncLabel('VIEW: nessun gameId');
-      openModal('modalSetup'); // fallback: permette setup offline se vuoi
+      // Viewer HUB: mostra la lista delle partite salvate sul dispositivo
+      setSyncLabel('VIEW: seleziona partita');
+      document.body.classList.add('viewer','viewerHub');
+      try{ closeModal('modalSetup'); closeModal('modalStartup'); }catch(e){}
+      viewerRefreshGames();
+      openModal('modalViewerGames');
+
+      // se l'archivio cambia (es. elimini in un'altra scheda), aggiorna
+      try{
+        window.addEventListener('storage', (ev)=>{
+          if(!document.body.classList.contains('viewerHub')) return;
+          if(!ev) return;
+          if(ev.key === GAMES_INDEX_KEY || (ev.key && ev.key.startsWith('BSP_V7_GAME_'))){
+            viewerRefreshGames();
+          }
+        });
+      }catch(e){}
+      return;
     }
-    // viewer pulito: mostra solo STAT LIVE
+    // viewer pulito: mostra STAT LIVE
     document.body.classList.add('viewer');
+    // in viewer diretto (con gameId) entra subito nelle stats
     openStats();
     return;
   }
