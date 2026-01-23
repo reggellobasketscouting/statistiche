@@ -156,8 +156,8 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 .luStats{width:170px;max-width:44vw;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0}
 /* Label a destra, valore a sinistra (colonna valori fissa) */
 .luStat{display:grid;grid-template-columns:1fr 78px;column-gap:10px;align-items:baseline;font-size:12px;font-weight:1000;line-height:1.35}
-.luStat .k{color:#bdbdbd;font-weight:900;text-align:right;white-space:nowrap}
-.luStat .v{font-weight:1000;text-align:left;white-space:nowrap}
+.luStat .k{color:#bdbdbd;font-weight:900;text-align:left;white-space:nowrap}
+.luStat .v{font-weight:1000;text-align:right;white-space:nowrap}
 .luStat .vY{color:var(--y)}
 .luStat .vPmPos{color:var(--g)}
 .luStat .vPmNeg{color:var(--r)}
@@ -172,7 +172,7 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 /* ===== QUINTETTO CUSTOM (modal SCEGLI QUINTETTO) ===== */
 /* centra la testata (PLUS/MINUS + riga PUNTI/TEMPO) */
 #chooseQStats .luTop{display:flex;justify-content:center}
-#chooseQStats .luStats{width:auto;max-width:none;align-items:center;text-align:center}
+#chooseQStats .luStats{width:auto;max-width:none;align-items:stretch;text-align:left}
 
 /* PLUS/MINUS centrato e piu' grande */
 #chooseQStats .qPmRow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
@@ -591,6 +591,34 @@ body.tablet .btnA{
 #modalStats .statsTopbar h3{flex:1;text-align:center;}
 #modalStats #viewerBackBtn{min-width:44px;}
 
+
+/* ASSIST GRID (same layout as CAMBIO) */
+.assist-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.assist-grid .player-card,
+.assist-grid .player-tile{
+  min-height: 90px;
+}
+
+
+/* Quintetti: allinea etichette E valori a destra */
+.luStat{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.luStat .k{
+  text-align: right !important;
+  justify-self: end;
+}
+.luStat .v{
+  text-align: right !important;
+  justify-self: end;
+}
+
 </style>
 
 <style id="statsLiveLayout">
@@ -714,6 +742,34 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
 /* ===== Falli speciali KPI ===== */
 .foulSpec{color:#ff3b3b;font-weight:1000;margin-left:6px;}
+
+/* ASSIST GRID (same layout as CAMBIO) */
+.assist-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.assist-grid .player-card,
+.assist-grid .player-tile{
+  min-height: 90px;
+}
+
+
+/* Quintetti: allinea etichette E valori a destra */
+.luStat{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.luStat .k{
+  text-align: right !important;
+  justify-self: end;
+}
+.luStat .v{
+  text-align: right !important;
+  justify-self: end;
+}
+
 </style>
 
 </head>
@@ -1011,7 +1067,26 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
     <button class="btnA" style="background:var(--g);color:#fff" onclick="addEventShot(true)">SEGNATO</button>
     <button class="btnA" style="background:var(--r);color:#fff" onclick="addEventShot(false)">SBAGLIATO</button>
   </div>
+
+  <div class="row-2" style="margin-top:8px">
+    <button class="btnW" style="background:#0f5f2a;color:#fff;border:1px solid #2e2e2e" onclick="addEventShotMadeAssist()">SEGNATO + ASSIST</button>
+    <button class="btnW" id="btnShotPlusFoul" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleShotPlusFoul()">+ FALLO</button>
+  </div>
+
   <button class="btnW" style="background:#333;color:#fff" onclick="closeShotModal()">ANNULLA</button>
+</div></div>
+
+
+<!-- ASSIST -->
+<div id="modalAssist" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">ASSIST</h3>
+    <button class="closeTop" onclick="closeModal('modalAssist')">CHIUDI</button>
+  </div>
+  <div class="pill">Seleziona chi ha fatto assist (i tuoi 4 in campo)</div>
+  <div class="assist-grid grid-players" id="assistGrid"></div>
+  <button class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="confirmAssist(null)">NESSUN ASSIST</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalAssist')">ANNULLA</button>
 </div></div>
 
 <!-- FT -->
@@ -1209,9 +1284,13 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
     <div class="kpi"><div class="t">FALLI SUBITI</div><div class="v" id="kfsuf">0</div></div>
   </div>
 
-  <div class="grid4">
+  <div class="grid2">
     <div class="kpi"><div class="t">PERSE</div><div class="v" id="kto">0</div></div>
     <div class="kpi"><div class="t">RECUPERATE</div><div class="v" id="kstl">0</div></div>
+  </div>
+
+  <div class="grid3" style="margin-top:8px">
+    <div class="kpi"><div class="t">ASSIST</div><div class="v" id="kast">0</div></div>
     <div class="kpi"><div class="t">RIMB. OFF</div><div class="v" id="kro">0</div></div>
     <div class="kpi"><div class="t">RIMB. DIF</div><div class="v" id="krd">0</div></div>
   </div>
@@ -2177,7 +2256,7 @@ function bootstrapRosterData(){
     S.p[pl.num]={
       pts:0,fouls:0,
       twoM:0,twoA:0, threeM:0,threeA:0, ftM:0,ftA:0,
-      foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,
+      foulMade:0,foulSuf:0,to:0,stl:0,ast:0,ro:0,rd:0,
       specials:[], // history
       tCount:0, uCount:0 // for automatic expulsion rule
     };
@@ -2582,7 +2661,7 @@ function actionFT(){
 function actionShot(){
   if(!S.selP) return;
   __DESEL_AFTER_MODAL = true;
-  openModal('modalTiro');
+  openShotModal();
   closeActionScreen();
 }
 /* ===================== PERIOD FLOW ===================== */
@@ -2787,6 +2866,8 @@ function setupCourt(){
 function closeShotModal(){
   closeModal('modalTiro');
   S.shotX=null; S.shotY=null; S.shotVal=2;
+  S.shotPlusFoul = false;
+  syncShotPlusFoulBtn();
   clearSelectedPlayer();
 }
 
@@ -3072,6 +3153,11 @@ function replay(){
         if(made){ base.p[pl].ftM++; base.p[pl].pts++; addScoreMy(1); addPMMy(1); }
         break;
       }
+      case 'assist':{
+        const pl=String(p.assister||''); if(!base.p[pl]) break;
+        base.p[pl].ast = (base.p[pl].ast||0)+1;
+        break;
+      }
       case 'sub':{
         const q=Number(p.nQ)||base.nQ;
         const rem=Number(p.remSec);
@@ -3258,10 +3344,141 @@ function addEventFoulSuf(freeThrows){
 /* shot */
 function addEventShot(made){
   if(!S.selP || S.shotX===null) return;
-  addEvent({type:'shot', payload:{player:S.selP, val:S.shotVal, made:!!made, x:S.shotX, y:S.shotY}});
+
+  const shooter = S.selP;
+  const plusFoul = !!S.shotPlusFoul;
+
+  addEvent({type:'shot', payload:{player:shooter, val:S.shotVal, made:!!made, x:S.shotX, y:S.shotY}});
   flash(made?'green':'red');
-  closeShotModal();
+
+  // reset shot coords always
+  closeModal('modalTiro');
+  S.shotX=null; S.shotY=null; S.shotVal=2;
+
+  // Se era attivo "+FALLO", vai direttamente a "FALLO SUBITO" mantenendo il giocatore selezionato
+  if(plusFoul){
+    // lascia la deselezione alla chiusura del modal "FALLO SUBITO"
+    __DESEL_AFTER_MODAL = true;
+    S.selP = shooter;
+    S.shotPlusFoul = false;
+    syncShotPlusFoulBtn();
+    openFoulSuffered();
+    return;
+  }
+
+  // normale: chiudi e torna alla schermata principale
+  clearSelectedPlayer();
 }
+
+function openShotModal(){
+  // reset UI specifica del tiro
+  S.shotPlusFoul = false;
+  syncShotPlusFoulBtn();
+
+  // reset selezione area tiro
+  S.shotX = null; S.shotY = null; S.shotVal = 2;
+  try{ $('shotInfo').textContent = 'Tiro da ?'; }catch(e){}
+  try{ $('shotCourt')?.querySelectorAll('.mark')?.forEach(x=>x.remove()); }catch(e){}
+
+  openModal('modalTiro');
+}
+
+function toggleShotPlusFoul(){
+  S.shotPlusFoul = !S.shotPlusFoul;
+  syncShotPlusFoulBtn();
+}
+
+function syncShotPlusFoulBtn(){
+  const b = document.getElementById('btnShotPlusFoul');
+  if(!b) return;
+  if(S.shotPlusFoul){
+    b.style.background = '#b71c1c';
+    b.style.borderColor = '#ff5252';
+    b.textContent = '✓ + FALLO';
+  }else{
+    b.style.background = '#222';
+    b.style.borderColor = '#2e2e2e';
+    b.textContent = '+ FALLO';
+  }
+}
+
+// SEGNATO + ASSIST: registra canestro e poi chiede l'assist
+let __pendingAssist = null;
+
+function addEventShotMadeAssist(){
+  if(!S.selP || S.shotX===null) return;
+
+  const shooter = S.selP;
+
+  addEvent({type:'shot', payload:{player:shooter, val:S.shotVal, made:true, x:S.shotX, y:S.shotY}});
+  flash('green');
+
+  // chiudo modal tiro ma tengo selezione finché scelgo l'assist
+  closeModal('modalTiro');
+  S.shotX=null; S.shotY=null; S.shotVal=2;
+
+  __pendingAssist = { scorer: shooter };
+
+  // lascia la deselezione alla chiusura del modal assist
+  __DESEL_AFTER_MODAL = true;
+  buildAssistGrid(shooter);
+  openModal('modalAssist');
+}
+
+function buildAssistGrid(scorer){
+  const g = document.getElementById('assistGrid');
+  if(!g) return;
+  g.innerHTML = '';
+
+  // i 4 compagni in campo con lui (S.inC = numeri in campo)
+  const teammates = (S.inC || []).filter(n => String(n) !== String(scorer));
+
+  // Helper: trova giocatore in roster per numero
+  function getPl(num){
+    const n = String(num);
+    const r = (S.myRoster || []).find(p => String(p.num) === n);
+    return r || {num:n, name:''};
+  }
+
+  teammates.forEach(n=>{
+    const pl = getPl(n);
+    const b = document.createElement('button');
+    b.className = 'player-card';
+    b.innerHTML = `
+      <div class="pname">${esc(pl.name||'')}</div>
+      <div class="pnum">${esc(String(pl.num))}</div>
+      <div class="bpts"> </div>
+      <div class="bmid">ASSIST</div>
+      <div class="bf"> </div>
+    `;
+    b.onclick = ()=>confirmAssist(String(pl.num));
+    g.appendChild(b);
+  });
+
+  // Se per qualche motivo non ho giocatori, mostro un messaggio
+  if(teammates.length===0){
+    const d = document.createElement('div');
+    d.className = 'pill';
+    d.textContent = 'Nessun altro giocatore in campo trovato.';
+    g.appendChild(d);
+  }
+}
+
+function confirmAssist(assister){
+  if(!__pendingAssist) { closeModal('modalAssist'); return; }
+
+  const scorer = __pendingAssist.scorer;
+
+  // Predisposizione statistica: evento dedicato "assist"
+  if(assister){
+    addEvent({type:'assist', payload:{assister: assister, scorer: scorer}});
+  }
+
+  __pendingAssist = null;
+  closeModal('modalAssist'); // qui scatta la deselezione (se __DESEL_AFTER_MODAL è true)
+}
+
+
 
 /* ft */
 function closeFTModal(){
@@ -3693,7 +3910,7 @@ function aggStatsByEvents(sel, qSel){
   const qNum = _qKeyToNum(qSel);
   const st = {
     twoM:0,twoA:0,threeM:0,threeA:0,ftM:0,ftA:0,
-    foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,
+    foulMade:0,foulSuf:0,to:0,stl:0,ast:0,ro:0,rd:0,
     shots:[]
   };
 
@@ -3732,7 +3949,14 @@ function aggStatsByEvents(sel, qSel){
       continue;
     }
 
-    if(ev.type==='quick'){
+    
+
+    if(ev.type==='assist'){
+      if(only && String(p.assister)!==only) continue;
+      st.ast++;
+      continue;
+    }
+if(ev.type==='quick'){
       if(only && String(p.player)!==only) continue;
       if(p.kind==='turnover') st.to++;
       if(p.kind==='steal') st.stl++;
@@ -3776,14 +4000,14 @@ function buildQuarterBar(){
 function aggStats(sel){
   const only=(sel && sel!=='ALL')?String(sel):null;
   const players=only?[only]:S.myRoster.map(pl=>pl.num);
-  const a={twoM:0,twoA:0,threeM:0,threeA:0,ftM:0,ftA:0,foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,shots:[]};
+  const a={twoM:0,twoA:0,threeM:0,threeA:0,ftM:0,ftA:0,foulMade:0,foulSuf:0,to:0,stl:0,ast:0,ro:0,rd:0,shots:[]};
   for(const pnum of players){
     const st=S.p[pnum]; if(!st) continue;
     a.twoM+=st.twoM; a.twoA+=st.twoA;
     a.threeM+=st.threeM; a.threeA+=st.threeA;
     a.ftM+=st.ftM; a.ftA+=st.ftA;
     a.foulMade+=st.foulMade; a.foulSuf+=st.foulSuf;
-    a.to+=st.to; a.stl+=st.stl; a.ro+=st.ro; a.rd+=st.rd;
+    a.to+=st.to; a.stl+=st.stl; a.ast+= (st.ast||0); a.ro+=st.ro; a.rd+=st.rd;
   }
   a.shots=(S.shots||[]).filter(s=>only? s.player===only : true);
   return a;
@@ -4063,6 +4287,7 @@ if(pmWrap){
   $("kfsuf").textContent = st.foulSuf;
   $("kto").textContent = st.to;
   $("kstl").textContent = st.stl;
+  if($("kast")) $("kast").textContent = st.ast||0;
   $("kro").textContent = st.ro;
   $("krd").textContent = st.rd;
 
@@ -4164,7 +4389,7 @@ function renderQuintetti(){
   const labelPl = (num)=>{
     const n = String(num);
     const nm = nameByNum[n];
-    return (nm? nm.toUpperCase() : ('#'+n)) + ` <span class="luNum">#${n}</span>`;
+    return (nm ? nm.toUpperCase() : String(n));
   };
 
   const sortVal=(L)=>{
@@ -4230,6 +4455,7 @@ function renderTabellini(cat){
     [
       {k:'FF',  t:'FALLI FATTI'},
       {k:'FS',  t:'FALLI SUBITI'},
+      {k:'AST', t:'ASSIST'},
     ],
     [
       {k:'TO',  t:'PALLE PERSE'},
@@ -4276,6 +4502,7 @@ function renderTabellini(cat){
         case 'FT':  return {n:sft.m,main:`${sft.m}/${sft.a}`,sub:pct(sft.m,sft.a),pctNum:(sft.a?(sft.m/sft.a):-1),att:sft.a};
         case 'FF':  return {n:Number(st.foulMade||0), main:String(st.foulMade||0)};
         case 'FS':  return {n:Number(st.foulSuf||0), main:String(st.foulSuf||0)};
+        case 'AST': return {n:Number(st.ast||0), main:String(st.ast||0)};
         case 'TO':  return {n:Number(st.to||0), main:String(st.to||0)};
         case 'STL': return {n:Number(st.stl||0), main:String(st.stl||0)};
         case 'REB': {
@@ -4724,11 +4951,73 @@ function openEdit(id){
       <button id="ed_benchAway" class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleEditBench('away')">🏟️ PANCHINA OSPITE</button>
     `;
     setTimeout(()=>buildEditSpecialTargets(ev),0);
+  } else if(ev.type==='assist'){
+    const scorer = ev.payload?.scorer || '';
+    const assister = ev.payload?.assister || '';
+
+    form.innerHTML = `
+      <div class="pill">Cambia giocatore che ha fatto assist</div>
+      <div class="muted" style="margin-bottom:8px">Marcatore: <b>${esc(scorer)}</b></div>
+      <div id="ed_assistGrid" class="assist-grid grid-players"></div>
+      <input type="hidden" id="ed_assister" value="${esc(assister)}">
+    `;
+
+    setTimeout(()=>buildEditAssistGrid(scorer, assister),0);
   } else {
     form.innerHTML=`<div class="muted">Editor non disponibile per questo evento. Puoi eliminarlo e rifarlo.</div>`;
   }
 
   openModal('modalEdit');
+}
+
+
+function buildEditAssistGrid(scorer, currentAssister){
+  const g = document.getElementById('ed_assistGrid');
+  if(!g) return;
+  g.innerHTML='';
+
+  // Preferisci: i 4 compagni attualmente in campo (se disponibili)
+  let candidates = (S.inC || []).map(String).filter(n => String(n) !== String(scorer));
+
+  // Fallback: tutti i giocatori del roster (escludendo scorer)
+  if(!candidates.length){
+    candidates = (S.myRoster || []).map(p=>String(p.num)).filter(n => String(n) !== String(scorer));
+  }
+
+  function getPl(num){
+    const n=String(num);
+    const r=(S.myRoster||[]).find(p=>String(p.num)===n);
+    return r || {num:n,name:''};
+  }
+
+  candidates.forEach(num=>{
+    const pl=getPl(num);
+    const b=document.createElement('button');
+    b.className='player-card';
+    b.dataset.num=String(pl.num);
+    b.innerHTML = `
+      <div class="pname">${esc(pl.name||'')}</div>
+      <div class="pnum">${esc(String(pl.num))}</div>
+      <div class="bpts"></div>
+      <div class="bmid">ASSIST</div>
+      <div class="bf"></div>
+    `;
+    if(String(pl.num)===String(currentAssister)) b.classList.add('sel');
+    b.onclick=()=>{
+      [...g.querySelectorAll('.player-card')].forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+      const hid=document.getElementById('ed_assister');
+      if(hid) hid.value=String(pl.num);
+    };
+    g.appendChild(b);
+  });
+
+  if(!g.children.length){
+    const d=document.createElement('div');
+    d.className='pill';
+    d.textContent='Nessun giocatore disponibile.';
+    g.appendChild(d);
+  }
 }
 
 function toMSS(remSec){
@@ -4890,8 +5179,13 @@ function saveEdit(){
       for(const n of editSelOpp) targets.push({team:'opp', num:n, kind});
       ev.payload.kind=kind;
       ev.payload.targets=targets;
+    } else if(ev.type==='assist'){
+      // Cambia SOLO l'assister (chi ha fatto assist)
+      const a = $('ed_assister')?.value || '';
+      if(!a) return alert('Seleziona un giocatore per l’assist');
+      ev.payload.assister = String(a);
     }
-  }catch(e){
+}catch(e){
     alert('Errore: '+e);
     return;
   }
