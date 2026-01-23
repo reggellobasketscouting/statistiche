@@ -619,6 +619,20 @@ body.tablet .btnA{
   justify-self: end;
 }
 
+
+/* Shot sequence */
+.seqChip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.10);color:#fff;
+  border:1px solid rgba(255,255,255,.12);
+  font-size:18px;
+  min-width:38px;
+}
+
 </style>
 
 <style id="statsLiveLayout">
@@ -768,6 +782,20 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 .luStat .v{
   text-align: right !important;
   justify-self: end;
+}
+
+
+/* Shot sequence */
+.seqChip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.10);color:#fff;
+  border:1px solid rgba(255,255,255,.12);
+  font-size:18px;
+  min-width:38px;
 }
 
 </style>
@@ -999,6 +1027,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   <div class="grid-players" id="choose5Grid"></div>
   <button id="btnConfirm5" class="btnW" style="background:grey;color:#fff" disabled onclick="confirm5()">CONFERMA (0/5)</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="cancelChoose5()">ANNULLA</button>
+      
 </div></div>
 
 <!-- CHOOSE QUINTETTO (custom) -->
@@ -1023,6 +1052,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   <button class="btnW" style="background:var(--g);color:#fff" onclick="nextPeriod()">SUCCESSIVO</button>
   <button class="btnW" style="background:var(--r);color:#fff" onclick="endGame()">TERMINA PARTITA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalEndPeriod')">ANNULLA</button>
+      
 </div></div>
 
 <!-- GAME OVER -->
@@ -1054,6 +1084,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   <div class="pill" style="margin-top:10px">CHI ENTRA</div><div class="grid-players" id="inGrid"></div>
   <button id="btnConfirmSub" class="btnW" style="background:grey;color:#fff" disabled onclick="addEventSub()">CONFERMA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalSub')">ANNULLA</button>
+      
 </div></div>
 
 <!-- SHOT -->
@@ -1070,10 +1101,30 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
   <div class="row-2" style="margin-top:8px">
     <button class="btnW" style="background:#0f5f2a;color:#fff;border:1px solid #2e2e2e" onclick="addEventShotMadeAssist()">SEGNATO + ASSIST</button>
-    <button class="btnW" id="btnShotPlusFoul" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleShotPlusFoul()">+ FALLO</button>
+    <button class="btnW" id="btnShotPlusFoul" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleShotPlusFoul()" id="btnShotFoul" onclick="toggleShotFoul()">+ FALLO</button>
+  </div>
+  <div class="sep" style="margin:14px 0 10px"></div>
+  <div class="pill" style="text-align:center;margin-bottom:8px">SEQUENZA</div>
+
+  <div class="grid2" style="margin-bottom:10px">
+    <button class="btnA orange" onclick="seqAdd('orb')">⬆️ RIMB. OFF</button>
+    <button class="btnA org" onclick="seqAdd('to')">⚠️ PERSA</button>
+  </div>
+  <div class="grid2" style="margin-bottom:10px">
+    <button class="btnA grn" onclick="seqAdd('made')">✅ SEGNATO</button>
+    <button class="btnA red" onclick="seqAdd('miss')">❌ SBAGLIATO</button>
   </div>
 
-  <button class="btnW" style="background:#333;color:#fff" onclick="closeShotModal()">ANNULLA</button>
+  <div class="center" style="margin:6px 0">
+    <button class="btnA gry" onclick="seqUndo()">↩️ UNDO</button>
+  </div>
+  <div class="seqBar" id="seqBar" style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin:10px 0 6px;min-height:44px"></div>
+
+  <div class="row-2" style="margin-top:10px">
+    <button class="btnW" style="background:#333;color:#fff" onclick="closeShotModal()">ANNULLA</button>
+    <button class="btnW" style="background:#333;color:#fff" onclick="seqOk()">OK</button>
+  </div>
+
 </div></div>
 
 
@@ -1087,6 +1138,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   <div class="assist-grid grid-players" id="assistGrid"></div>
   <button class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="confirmAssist(null)">NESSUN ASSIST</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalAssist')">ANNULLA</button>
+      
 </div></div>
 
 <!-- FT -->
@@ -1115,6 +1167,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   <button id="btnRimessa" class="btnW" style="background:#e0e0e0;color:#111" disabled onclick="addEventFoulSuf(false)">RIMESSA</button>
   <button id="btnLiberi" class="btnW" style="background:var(--y);color:#111" disabled onclick="addEventFoulSuf(true)">LIBERI</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalFoulSuf')">ANNULLA</button>
+      
 </div></div>
 
 <!-- SPECIAL FOUL -->
@@ -1143,6 +1196,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
   <button id="btnSpecOk" class="btnW" style="background:grey;color:#fff" disabled onclick="addEventSpecial()">CONFERMA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalSpecial')">ANNULLA</button>
+      
 </div></div>
 
 <!-- CHECK FOULS -->
@@ -1334,6 +1388,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
   <div id="editForm"></div>
   <button class="btnW" style="background:var(--g);color:#fff" onclick="saveEdit()">SALVA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalEdit')">ANNULLA</button>
+      
 </div></div>
 
 <!-- MANUAL EDIT -->
@@ -1426,6 +1481,7 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
 
   <button class="btnW" style="background:var(--g);color:#fff" onclick="applyManualEdit()">APPLICA</button>
   <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalManual')">ANNULLA</button>
+      
 </div></div>
 
 <script>
@@ -5656,9 +5712,123 @@ applyDeviceLayout();
     togglePreGameActions();
     // extra safety: re-check shortly after load (mobile rendering/state timing)
     setTimeout(togglePreGameActions, 50);
-    setTimeout(togglePreGameActions, 250);
+    setTime
+function openFoulSufferedFor(num){
+  try{ S.sel = String(num); }catch(e){}
+  try{ openModal('modalFoulSuf'); return; }catch(e){}
+  try{ openModal('modalFoulSuffered'); }catch(e){}
+}
+
+
+
+
+function toggleShotFoul(){
+  window.SHOT_FOUL_ON = !window.SHOT_FOUL_ON;
+  const b = document.getElementById('btnShotFoul');
+  if(b) b.classList.toggle('on', window.SHOT_FOUL_ON);
+}
+
+out(togglePreGameActions, 250);
   });
 })();
+
+// ===== Sequenza TIRO (modal TIRO) =====
+let SHOT_SEQ = [];
+
+function seqReset(){
+  SHOT_SEQ = [];
+  const bar = document.getElementById('seqBar');
+  if(bar) bar.innerHTML = '';
+}
+
+function seqIcon(k){
+  if(k==='orb') return '⬆️';
+  if(k==='to') return '🏀';
+  if(k==='made') return '✅';
+  if(k==='miss') return '❌';
+  return '';
+}
+
+function seqRender(){
+  const bar = document.getElementById('seqBar');
+  if(!bar) return;
+  bar.innerHTML = SHOT_SEQ.map(k=>`<span class="seqChip">${seqIcon(k)}</span>`).join('');
+}
+
+function seqAdd(kind){
+  // Per SEGNATO/SBAGLIATO serve il punto sulla mappa
+  if((kind==='made' || kind==='miss') && (S.shotX===null || S.shotY===null)){
+    alert('Seleziona prima un punto sulla mappa tiro');
+    return;
+  }
+  SHOT_SEQ.push(kind);
+  seqRender();
+}
+
+function seqUndo(){
+  if(!SHOT_SEQ.length) return;
+  SHOT_SEQ.pop();
+  seqRender();
+}
+
+function seqOk(){
+  if(!SHOT_SEQ.length){
+    // nulla da confermare: chiudo
+    closeShotModal();
+    return;
+  }
+  if(!S.selP){
+    alert('Seleziona un giocatore');
+    return;
+  }
+
+  const shooter = S.selP;
+  const plusFoul = !!S.shotPlusFoul;
+
+  // Applica in ordine (senza chiudere a metà)
+  SHOT_SEQ.forEach(k=>{
+    if(k==='orb'){
+      addEventQuick('reb_off');
+    }else if(k==='to'){
+      addEventQuick('turnover');
+    }else if(k==='made'){
+      addEvent({type:'shot', payload:{player:shooter, val:S.shotVal, made:true, x:S.shotX, y:S.shotY}});
+      flash('green');
+    }else if(k==='miss'){
+      addEvent({type:'shot', payload:{player:shooter, val:S.shotVal, made:false, x:S.shotX, y:S.shotY}});
+      flash('red');
+    }
+  });
+
+  // Reset sequenza e chiudo
+  seqReset();
+  closeModal('modalTiro');
+  S.shotX=null; S.shotY=null; S.shotVal=2;
+
+  // Se attivo +FALLO -> vai a fallo subito (come nel flusso normale)
+  if(plusFoul){
+    __DESEL_AFTER_MODAL = true;
+    S.selP = shooter;
+    S.shotPlusFoul = false;
+    syncShotPlusFoulBtn();
+    openFoulSuffered();
+    return;
+  }
+
+  clearSelectedPlayer();
+}
+
+// Reset automatico quando apro il modal tiro
+(function(){
+  const _open = window.openShotModal;
+  if(typeof _open === 'function'){
+    window.openShotModal = function(){
+      seqReset();
+      return _open.apply(this, arguments);
+    }
+  }
+})();
+
 </script>
 
 </body>
