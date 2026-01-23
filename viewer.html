@@ -111,7 +111,7 @@
       query, orderBy, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
- // Your web app's Firebase configuration
+     // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBhzea5-JQnlWhY9jMo3WH9v5dQOFGxolI",
   authDomain: "basket-viewer.firebaseapp.com",
@@ -131,12 +131,48 @@ const firebaseConfig = {
 
     const state = { user: null, games: [], isAdmin: false };
 
-    function ytToEmbed(url){
-      if(!url) return "";
+    
+    function ytParse(url){
+      if(!url) return {embed:"", ok:false};
       try{
         const u = new URL(url);
-        if(u.hostname.includes("youtube.com") && u.searchParams.get("v")){
-          return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+
+        // youtube.com/watch?v=ID
+        if(u.hostname.includes("youtube.com") && u.pathname === "/watch" && u.searchParams.get("v")){
+          const id = u.searchParams.get("v");
+          return {embed:`https://www.youtube.com/embed/${id}`, ok:true};
+        }
+
+        // youtu.be/ID
+        if(u.hostname === "youtu.be"){
+          const id = u.pathname.replace("/","");
+          if(id) return {embed:`https://www.youtube.com/embed/${id}`, ok:true};
+        }
+
+        // youtube.com/live/ID
+        if(u.hostname.includes("youtube.com") && u.pathname.startsWith("/live/")){
+          const id = u.pathname.split("/")[2];
+          if(id) return {embed:`https://www.youtube.com/embed/${id}`, ok:true};
+        }
+
+        // youtube.com/shorts/ID
+        if(u.hostname.includes("youtube.com") && u.pathname.startsWith("/shorts/")){
+          const id = u.pathname.split("/")[2];
+          if(id) return {embed:`https://www.youtube.com/embed/${id}`, ok:true};
+        }
+
+        // already embed
+        if(u.hostname.includes("youtube.com") && u.pathname.includes("/embed/")){
+          return {embed:url, ok:true};
+        }
+
+        // Non embeddable links (es. /@handle/live) -> ok false
+        return {embed:"", ok:false};
+      }catch(e){
+        return {embed:"", ok:false};
+      }
+    }
+`;
         }
         if(u.hostname === "youtu.be"){
           const id = u.pathname.replace("/","");
@@ -169,7 +205,9 @@ const firebaseConfig = {
 
       list.innerHTML = items.map(g=>{
         const y = g.youtubeUrl ? escapeHtml(g.youtubeUrl) : "";
-        const yEmbed = g.youtubeUrl ? escapeHtml(ytToEmbed(g.youtubeUrl)) : "";
+        const yInfo = g.youtubeUrl ? ytParse(g.youtubeUrl) : {embed:"", ok:false};
+        const yEmbed = yInfo.ok ? escapeHtml(yInfo.embed) : "";
+        const yCanEmbed = yInfo.ok;
         const stats = escapeHtml(g.statsUrl||"");
         const canDel = state.isAdmin ? `<a class="dangerLink" href="#" data-del="${g.id}">Elimina</a>` : "";
         return `
@@ -180,11 +218,12 @@ const firebaseConfig = {
               <a class="a" href="${stats}" target="_blank" rel="noopener"><button class="btn ok">STATISTICHE</button></a>
               ${g.youtubeUrl ? `<a class="a" href="${y}" target="_blank" rel="noopener"><button class="btn">YOUTUBE</button></a>` : ""}
             </div>
-            ${g.youtubeUrl ? `<div style="margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid var(--line)">
+            ${(g.youtubeUrl && yCanEmbed) ? `<div style="margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid var(--line)">
               <iframe width="100%" height="220" src="${yEmbed}" title="YouTube" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen></iframe>
             </div>` : ""}
+            ${(g.youtubeUrl && !yCanEmbed) ? `<div class=\"small\" style=\"margin-top:10px\">Anteprima non disponibile per questo link. Usa il tasto YOUTUBE.</div>` : ``}
             ${canDel ? `<div class="hr"></div><div class="small">${canDel}</div>` : ""}
           </div>
         `;
@@ -232,6 +271,51 @@ const firebaseConfig = {
       const email = $("email").value.trim();
       const pass = $("pass").value;
       if(!email || !pass) return alert("Inserisci email e password");
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+      }catch(e){
+        console.error(e);
+        alert("Login fallito");
+      }
+    });
+
+    $("btnLogout").addEventListener("click", async ()=>{
+      await signOut(auth);
+    });
+
+    const ADMIN_UIDS = new Set([
+      "REPLACE_WITH_YOUR_ADMIN_UID"
+    ]);
+
+    onAuthStateChanged(auth, (user)=>{
+      state.user = user || null;
+      state.isAdmin = !!(user && ADMIN_UIDS.has(user.uid));
+      setUI();
+    });
+
+    $("btnAdd").addEventListener("click", async ()=>{
+      if(!state.isAdmin) return alert("Solo admin");
+      const title = $("title").value.trim();
+      const date = $("date").value.trim();
+      const statsUrl = $("statsUrl").value.trim();
+      const youtubeUrl = $("youtubeUrl").value.trim();
+      const notes = $("notes").value.trim();
+
+      if(!title || !date || !statsUrl) return alert("Compila: Titolo, Data, Link Statistiche");
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert("Data nel formato YYYY-MM-DD");
+
+      await addDoc(collection(db, "games"), {
+        title, date, statsUrl,
+        youtubeUrl: youtubeUrl || "",
+        notes: notes || "",
+        createdAt: serverTimestamp()
+      });
+
+      $("title").value=""; $("date").value=""; $("statsUrl").value=""; $("youtubeUrl").value=""; $("notes").value="";
+    });
+  </script>
+</body>
+</html> alert("Inserisci email e password");
       try{
         await signInWithEmailAndPassword(auth, email, pass);
       }catch(e){
