@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Partite (Viewer)</title>
+  <style>
+    :root{
+      --bg:#0b0b0f; --card:#141421; --muted:#a7a7b5; --txt:#f3f3f6;
+      --line:rgba(255,255,255,.12); --btn:#2a2a3f;
+      --ok:#0f5f2a; --bad:#7a1f1f;
+    }
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    .wrap{max-width:980px;margin:0 auto;padding:14px}
+    .top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    h1{font-size:18px;margin:0}
+    .pill{padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.05);color:var(--muted);font-weight:700;font-size:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input{background:#0f0f18;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:10px 12px;outline:none}
+    input::placeholder{color:#7c7c90}
+    .btn{background:var(--btn);border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:10px 12px;font-weight:800;cursor:pointer}
+    .btn:hover{filter:brightness(1.08)}
+    .btn.ok{background:var(--ok)}
+    .btn.bad{background:var(--bad)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:12px}
+    .card{grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px}
+    @media(min-width:780px){ .card{grid-column:span 6} }
+    .title{font-weight:1000;font-size:16px;margin:0 0 6px 0}
+    .meta{color:var(--muted);font-size:12px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .a{flex:1;min-width:160px;text-align:center;text-decoration:none}
+    .a .btn{width:100%}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .hide{display:none !important}
+    .adminBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:12px;margin-top:12px}
+    .two{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:780px){ .two{grid-template-columns:1fr 1fr} }
+    .small{font-size:12px;color:var(--muted);line-height:1.3}
+    .dangerLink{color:#ffb4b4;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="row">
+        <h1>Partite</h1>
+        <span class="pill" id="statusPill">offline</span>
+      </div>
+      <div class="row">
+        <input id="q" placeholder="Cerca (titolo / note)"/>
+        <button class="btn" id="btnLoginToggle">Login</button>
+        <button class="btn hide" id="btnLogout">Logout</button>
+      </div>
+    </div>
+
+    <div class="adminBox hide" id="loginBox">
+      <div class="two">
+        <div>
+          <div class="pill" style="display:inline-block;margin-bottom:8px">Login admin</div>
+          <div class="row" style="margin-bottom:10px">
+            <input id="email" placeholder="email" style="flex:1;min-width:220px">
+            <input id="pass" placeholder="password" type="password" style="flex:1;min-width:220px">
+          </div>
+          <div class="row">
+            <button class="btn ok" id="btnLogin">Entra</button>
+            <span class="small">Solo l'admin può aggiungere/eliminare partite.</span>
+          </div>
+        </div>
+        <div>
+          <div class="pill" style="display:inline-block;margin-bottom:8px">Note</div>
+          <div class="small">
+            Questa pagina legge le partite da Firestore. Imposta le regole in modo che tutti possano leggere,
+            ma solo tu possa scrivere (vedi il file <b>firestore.rules.txt</b> che ti ho incluso).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="adminBox hide" id="adminBox">
+      <div class="pill" style="display:inline-block;margin-bottom:10px">Aggiungi partita</div>
+      <div class="two">
+        <input id="title" placeholder="Titolo (es. Ritorno REGG CMB - BM)">
+        <input id="date" placeholder="Data (YYYY-MM-DD)">
+      </div>
+      <div class="two" style="margin-top:10px">
+        <input id="statsUrl" placeholder="Link Statistiche (es. https://.../statistiche/?view=1&game=...)">
+        <input id="youtubeUrl" placeholder="Link YouTube (watch o live) (opzionale)">
+      </div>
+      <div class="two" style="margin-top:10px">
+        <input id="notes" placeholder="Note (opzionale)">
+        <button class="btn ok" id="btnAdd">SALVA</button>
+      </div>
+      <div class="small" style="margin-top:10px">
+        Suggerimento: per YouTube puoi incollare il link <b>watch?v=...</b> o un link live: lo gestiamo noi.
+      </div>
+    </div>
+
+    <div class="grid" id="list"></div>
+
+    <div class="hr"></div>
+    <div class="small">
+      Se vuoi che la viewer sia installabile come app (PWA), dimmelo e ti preparo manifest + service worker.
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, deleteDoc, doc,
+      query, orderBy, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+ // Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBhzea5-JQnlWhY9jMo3WH9v5dQOFGxolI",
+  authDomain: "basket-viewer.firebaseapp.com",
+  projectId: "basket-viewer",
+  storageBucket: "basket-viewer.firebasestorage.app",
+  messagingSenderId: "543075658747",
+  appId: "1:543075658747:web:e0baba9479aac2b8bcf95e"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const $ = (id)=>document.getElementById(id);
+    const pill = $("statusPill");
+    const list = $("list");
+
+    const state = { user: null, games: [], isAdmin: false };
+
+    function ytToEmbed(url){
+      if(!url) return "";
+      try{
+        const u = new URL(url);
+        if(u.hostname.includes("youtube.com") && u.searchParams.get("v")){
+          return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+        }
+        if(u.hostname === "youtu.be"){
+          const id = u.pathname.replace("/","");
+          if(id) return `https://www.youtube.com/embed/${id}`;
+        }
+        if(u.pathname.includes("/embed/")) return url;
+        return url;
+      }catch(e){
+        return url;
+      }
+    }
+
+    function fmtDate(iso){
+      if(!iso) return "";
+      const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(!m) return iso;
+      return `${m[3]}/${m[2]}/${m[1]}`;
+    }
+
+    function escapeHtml(s){
+      return String(s||"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+    }
+
+    function render(){
+      const q = ($("q").value || "").trim().toLowerCase();
+      const items = state.games.filter(g=>{
+        const hay = `${g.title||""} ${g.notes||""}`.toLowerCase();
+        return !q || hay.includes(q);
+      });
+
+      list.innerHTML = items.map(g=>{
+        const y = g.youtubeUrl ? escapeHtml(g.youtubeUrl) : "";
+        const yEmbed = g.youtubeUrl ? escapeHtml(ytToEmbed(g.youtubeUrl)) : "";
+        const stats = escapeHtml(g.statsUrl||"");
+        const canDel = state.isAdmin ? `<a class="dangerLink" href="#" data-del="${g.id}">Elimina</a>` : "";
+        return `
+          <div class="card">
+            <div class="title">${escapeHtml(g.title||"Partita")}</div>
+            <div class="meta">${fmtDate(g.date)} ${g.notes ? " • " + escapeHtml(g.notes) : ""}</div>
+            <div class="actions">
+              <a class="a" href="${stats}" target="_blank" rel="noopener"><button class="btn ok">STATISTICHE</button></a>
+              ${g.youtubeUrl ? `<a class="a" href="${y}" target="_blank" rel="noopener"><button class="btn">YOUTUBE</button></a>` : ""}
+            </div>
+            ${g.youtubeUrl ? `<div style="margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid var(--line)">
+              <iframe width="100%" height="220" src="${yEmbed}" title="YouTube" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+            </div>` : ""}
+            ${canDel ? `<div class="hr"></div><div class="small">${canDel}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+
+      if(state.isAdmin){
+        list.querySelectorAll("[data-del]").forEach(a=>{
+          a.addEventListener("click", async (e)=>{
+            e.preventDefault();
+            const id = a.getAttribute("data-del");
+            if(!id) return;
+            if(!confirm("Eliminare questa partita?")) return;
+            await deleteDoc(doc(db, "games", id));
+          });
+        });
+      }
+    }
+
+    const qGames = query(collection(db, "games"), orderBy("date", "desc"));
+    onSnapshot(qGames, (snap)=>{
+      state.games = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      pill.textContent = "online";
+      render();
+    }, (err)=>{
+      console.error(err);
+      pill.textContent = "errore DB";
+    });
+
+    $("q").addEventListener("input", render);
+
+    function setUI(){
+      $("btnLogout").classList.toggle("hide", !state.user);
+      $("loginBox").classList.toggle("hide", !!state.user);
+      $("adminBox").classList.toggle("hide", !state.isAdmin);
+      $("btnLoginToggle").textContent = state.user ? "Account" : "Login";
+      pill.textContent = state.user ? (state.isAdmin ? "admin" : "online") : pill.textContent;
+      render();
+    }
+
+    $("btnLoginToggle").addEventListener("click", ()=>{
+      $("loginBox").classList.toggle("hide");
+    });
+
+    $("btnLogin").addEventListener("click", async ()=>{
+      const email = $("email").value.trim();
+      const pass = $("pass").value;
+      if(!email || !pass) return alert("Inserisci email e password");
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+      }catch(e){
+        console.error(e);
+        alert("Login fallito");
+      }
+    });
+
+    $("btnLogout").addEventListener("click", async ()=>{
+      await signOut(auth);
+    });
+
+    const ADMIN_UIDS = new Set([
+      "ZKCy4cX1lifwgBnHdVwpXlNBfdN2"
+    ]);
+
+    onAuthStateChanged(auth, (user)=>{
+      state.user = user || null;
+      state.isAdmin = !!(user && ADMIN_UIDS.has(user.uid));
+      setUI();
+    });
+
+    $("btnAdd").addEventListener("click", async ()=>{
+      if(!state.isAdmin) return alert("Solo admin");
+      const title = $("title").value.trim();
+      const date = $("date").value.trim();
+      const statsUrl = $("statsUrl").value.trim();
+      const youtubeUrl = $("youtubeUrl").value.trim();
+      const notes = $("notes").value.trim();
+
+      if(!title || !date || !statsUrl) return alert("Compila: Titolo, Data, Link Statistiche");
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert("Data nel formato YYYY-MM-DD");
+
+      await addDoc(collection(db, "games"), {
+        title, date, statsUrl,
+        youtubeUrl: youtubeUrl || "",
+        notes: notes || "",
+        createdAt: serverTimestamp()
+      });
+
+      $("title").value=""; $("date").value=""; $("statsUrl").value=""; $("youtubeUrl").value=""; $("notes").value="";
+    });
+  </script>
+</body>
+</html>
