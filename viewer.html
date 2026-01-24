@@ -37,14 +37,6 @@
     .small{font-size:12px;color:var(--muted);line-height:1.35}
     .dangerLink{color:#ffb4b4;text-decoration:none;font-weight:800}
 
-    <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0b0f14">
-
-<!-- iOS: (consigliato) -->
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     /* Modal (edit) */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:12px;z-index:9999}
     .modal.show{display:flex}
@@ -455,14 +447,5 @@ if(el.tagName === "A") e.preventDefault();
 
     setUI();
   </script>
-
-  <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
-    });
-  }
-</script>
-
 </body>
 </html>
