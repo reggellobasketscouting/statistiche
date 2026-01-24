@@ -2502,10 +2502,7 @@ function connectCloudFromSetup(){
   }
   bindLiveToCurrentGame();
   try{ autosave(); }catch(e){}
-  alert('LIVE pronto ✅
-
-ID partita: '+String(CURRENT_GAME_ID)+'
-Ora puoi usare 📡 LIVE LINK');
+  alert(`LIVE pronto ✅\n\nID partita: ${String(CURRENT_GAME_ID)}\nOra puoi usare 📡 LIVE LINK`);
 }
 
 function applySetup(){
@@ -5776,6 +5773,7 @@ function toggleShotFoul(){
 }
 </script>
 
+<script>
 // ===== Sequenza TIRO (modal TIRO) =====
 let SHOT_SEQ = [];
 
