@@ -5710,6 +5710,7 @@ applyDeviceLayout();
   
 </script>
 
+
 <script>
 (function(){
   function togglePreGameActions(){
@@ -5734,7 +5735,6 @@ applyDeviceLayout();
     }catch(e){}
   }
 
-  // Wrap functions that can change state/UI so the toggle always runs.
   function wrap(name){
     try{
       var fn = window[name];
@@ -5756,27 +5756,25 @@ applyDeviceLayout();
 
   document.addEventListener('DOMContentLoaded', function(){
     togglePreGameActions();
-    // extra safety: re-check shortly after load (mobile rendering/state timing)
     setTimeout(togglePreGameActions, 50);
-    setTime
+    setTimeout(togglePreGameActions, 250);
+  });
+})();
+</script>
+
+<script>
 function openFoulSufferedFor(num){
   try{ S.sel = String(num); }catch(e){}
   try{ openModal('modalFoulSuf'); return; }catch(e){}
   try{ openModal('modalFoulSuffered'); }catch(e){}
 }
 
-
-
-
 function toggleShotFoul(){
   window.SHOT_FOUL_ON = !window.SHOT_FOUL_ON;
   const b = document.getElementById('btnShotFoul');
   if(b) b.classList.toggle('on', window.SHOT_FOUL_ON);
 }
-
-out(togglePreGameActions, 250);
-  });
-})();
+</script>
 
 // ===== Sequenza TIRO (modal TIRO) =====
 let SHOT_SEQ = [];
