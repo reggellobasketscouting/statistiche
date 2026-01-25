@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Installa Basket Reggello Scouting</title>
+  <meta name="theme-color" content="#0b0b0f">
+  <style>
+    :root{--bg:#0b0b0f;--card:#14141c;--text:#f3f3f6;--muted:#b9bac7;--accent:#ffd54a;}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    .wrap{max-width:720px;margin:0 auto;padding:20px 16px 40px;}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+    h1{font-size:22px;margin:8px 0 4px;}
+    p{color:var(--muted);line-height:1.45;margin:10px 0;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+    button,a.btn{appearance:none;border:0;border-radius:14px;padding:12px 14px;font-weight:700;cursor:pointer}
+    a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+    .primary{background:var(--accent);color:#111;}
+    .ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.14);}
+    .hidden{display:none!important;}
+    .steps{margin:10px 0 0 18px;color:var(--muted)}
+    .steps li{margin:6px 0;}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:var(--muted);font-size:13px}
+    .icon{width:18px;height:18px;display:inline-block;vertical-align:-3px}
+    .footer{opacity:.8;font-size:12px;margin-top:16px}
+    code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="pill">📊 Basket Reggello • Scouting</div>
+    <h1>Installa l'app Scouting (gratis)</h1>
+    <p>Questa è una <b>web‑app installabile (PWA)</b>: si installa dalla pagina web e funziona come un'app sul telefono.</p>
+
+    <div class="card">
+      <div class="row">
+        <a class="btn primary" id="openApp" href="./index.html">Apri Scouting</a>
+        <button class="ghost" id="copyLink">Copia link</button>
+      </div>
+      <p class="footer">Su iPhone, se apri da WhatsApp: usa <b>Apri in Safari</b> per vedere “Aggiungi a Home”.</p>
+    </div>
+
+    <div class="card" id="androidCard">
+      <h2 style="margin:0 0 6px;font-size:18px;">Android</h2>
+      <p>Se disponibile, puoi installare con un tap.</p>
+      <div class="row">
+        <button class="btn primary hidden" id="installBtn">Installa</button>
+        <button class="btn ghost" id="androidHelpBtn">Istruzioni</button>
+      </div>
+      <ol class="steps hidden" id="androidSteps">
+        <li>Apri lo Scouting in Chrome/Edge</li>
+        <li>Tocca il menu <b>⋮</b></li>
+        <li>Seleziona <b>Installa app</b> (o “Aggiungi a schermata Home”)</li>
+      </ol>
+    </div>
+
+    <div class="card" id="iosCard">
+      <h2 style="margin:0 0 6px;font-size:18px;">iPhone / iPad (iOS)</h2>
+      <p>Su iOS l'installazione si fa da Safari tramite “Aggiungi a Home”.</p>
+      <ol class="steps" id="iosSteps">
+        <li>Apri lo Scouting in <b>Safari</b></li>
+        <li>Tocca <b>Condividi</b>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 16V3m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </li>
+        <li>Seleziona <b>Aggiungi a Home</b></li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 6px;font-size:18px;">Link da condividere</h2>
+      <p>Pagina install:<br><code id="installUrl"></code></p>
+      <p>Link diretto app:<br><code id="appUrl"></code></p>
+    </div>
+  </div>
+
+<script>
+  const base = location.href.replace(/[#?].*$/, "");
+  const installUrl = base;
+  const appUrl = new URL("./index.html", base).toString();
+  document.getElementById("installUrl").textContent = installUrl;
+  document.getElementById("appUrl").textContent = appUrl;
+
+  document.getElementById("copyLink").addEventListener("click", async () => {
+    try{
+      await navigator.clipboard.writeText(appUrl);
+      const btn = document.getElementById("copyLink");
+      const old = btn.textContent;
+      btn.textContent = "Copiato ✅";
+      setTimeout(()=>btn.textContent=old, 1200);
+    }catch(e){
+      alert("Copia non disponibile. Link: " + appUrl);
+    }
+  });
+
+  const androidHelpBtn = document.getElementById("androidHelpBtn");
+  const androidSteps = document.getElementById("androidSteps");
+  androidHelpBtn.addEventListener("click", () => androidSteps.classList.toggle("hidden"));
+
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  if(isIOS){ document.getElementById("androidCard").classList.add("hidden"); }
+  if(isAndroid){ document.getElementById("iosCard").classList.add("hidden"); }
+
+  let deferredPrompt = null;
+  const installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.classList.remove("hidden");
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch(e) {}
+    deferredPrompt = null;
+    installBtn.classList.add("hidden");
+  });
+</script>
+</body>
+</html>
