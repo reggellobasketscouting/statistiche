@@ -1,10 +1,10 @@
 const CACHE = "basket-viewer-v1";
 const ASSETS = [
-  "./viewer.html",
-  "./manifest.webmanifest",
-  "./sw.js",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./viewer/viewer.html",
+  "./viewer/manifest.webmanifest",
+  "./viewer/sw.js",
+  "./viewer/icons/icon-192.png",
+  "./viewer/icons/icon-512.png"
 ];
 
 self.addEventListener("install", (e) => {
