@@ -456,7 +456,7 @@ if(el.tagName === "A") e.preventDefault();
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(console.warn);
+        navigator.serviceWorker.register("./viewer/sw.js").catch(console.warn);
       });
     }
   </script>
