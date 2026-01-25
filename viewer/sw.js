@@ -1,4 +1,4 @@
-const CACHE = "basket-viewer-v1";
+const CACHE = "basket-viewer-v2";
 const ASSETS = [
   "./viewer/viewer.html",
   "./viewer/manifest.webmanifest",
