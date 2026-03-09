@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        "index": {
+          "$gameId": {
+            ".read": "auth != null && auth.uid == $uid",
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        },
+        "games": {
+          "$gameId": {
+            ".read": "auth != null && auth.uid == $uid",
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        }
+      }
+    },
+    "games": {
+      "$gameId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "presence": {
+      "$gameId": {
+        "$clientId": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    },
+    "hubs": {
+      "$hubId": {
+        "items": {
+          ".read": true,
+          ".write": "auth != null"
+        }
+      }
+    }
+  }
+}
