@@ -1070,8 +1070,9 @@ body.viewer.viewerSub #viewerBackBtn{display:inline-flex!important;}
       <div id="labelPeriodo">Q1</div>
       <div id="syncStatus">LOCALE</div>
       <button id="btnStato" onclick="togglePeriodo()">INIZIA Q1</button>
-      <div class="btn-mini" style="width:100%;text-align:center;cursor:default;font-size:11px;opacity:.9">
-        <span id="quarterPartial">Parziale Q1: 0-0</span>
+      <div class="btn-mini" style="width:100%;text-align:center;cursor:default;font-size:11px;opacity:.9;line-height:1.2">
+        <span id="quarterPartialLabel" style="display:block">Parziale</span>
+        <span id="quarterPartialScore" style="display:block">Q1: 0-0</span>
       </div>
     </div>
     <div class="score-box">
@@ -3159,14 +3160,16 @@ function renderDots(id,used){
 }
 
 function updateQuarterPartial(){
-  const el = $('quarterPartial');
-  if(!el) return;
+  const lbl = $('quarterPartialLabel');
+  const scoreEl = $('quarterPartialScore');
+  if(!lbl || !scoreEl) return;
   const sq = scoreByQuarter();
   const q = Math.max(1, Number(S.nQ) || 1);
   const qLabel = (q > 4) ? `OT${q-4}` : `Q${q}`;
   const h = Number(sq.H[q]) || 0;
   const a = Number(sq.A[q]) || 0;
-  el.textContent = `Parziale ${qLabel}: ${h}-${a}`;
+  lbl.textContent = 'Parziale';
+  scoreEl.textContent = `${qLabel}: ${h}-${a}`;
 }
 
 function renderRoster(){
